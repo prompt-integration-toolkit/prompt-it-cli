@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import { registerGetCommand } from './commands/get.js'
+import { registerRegisterCommand } from './commands/register.js'
 
 const program = new Command()
 
@@ -9,6 +10,7 @@ program
   .version('0.1.0')
 
 registerGetCommand(program)
+registerRegisterCommand(program)
 
 program
   .command('help')
