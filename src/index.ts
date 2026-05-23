@@ -1,5 +1,9 @@
 import { Command } from 'commander'
 import { registerGetCommand } from './commands/get.js'
+import { registerRegisterCommand } from './commands/register.js'
+import { registerLoginCommand } from './commands/login.js'
+import { registerMeCommand } from './commands/me.js'
+import { registerLogoutCommand } from './commands/logout.js'
 
 const program = new Command()
 
@@ -9,6 +13,10 @@ program
   .version('0.1.0')
 
 registerGetCommand(program)
+registerRegisterCommand(program)
+registerLoginCommand(program)
+registerMeCommand(program)
+registerLogoutCommand(program)
 
 program
   .command('help')
