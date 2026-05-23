@@ -1,4 +1,9 @@
-export function parsePromptRef(ref) {
+export type PromptRef = {
+  user: string
+  promptName: string
+}
+
+export function parsePromptRef(ref: string): PromptRef {
   if (!ref || typeof ref !== 'string') {
     throw new Error('Prompt reference is required.')
   }

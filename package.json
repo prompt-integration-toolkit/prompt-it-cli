@@ -1,28 +1,26 @@
 {
   "name": "prompt-it-cli",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
+  "version": "0.1.0",
   "type": "module",
+  "description": "CLI tool for storing, organizing, versioning, and reusing prompts.",
+  "bin": {
+    "prompt-it": "./bin/prompt-it.js"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "dev": "node ./bin/prompt-it.js",
+    "start": "node ./bin/prompt-it.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Prompt-It-org/prompt-it-cli.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Prompt-It-org/prompt-it-cli/issues"
-  },
-  "homepage": "https://github.com/Prompt-It-org/prompt-it-cli#readme",
   "dependencies": {
-    "@clack/prompts": "^1.4.0",
-    "chalk": "^5.6.2",
-    "clipboardy": "^5.3.1",
-    "commander": "^14.0.3",
-    "fs-extra": "^11.3.5"
+    "@clack/prompts": "^0.11.0",
+    "chalk": "^5.0.0",
+    "clipboardy": "^4.0.0",
+    "commander": "^14.0.0",
+    "fs-extra": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
   }
 }

@@ -10,4 +10,11 @@ program
 
 registerGetCommand(program)
 
+program
+  .command('help')
+  .description('Show help information.')
+  .action(() => {
+    program.help()
+  })
+
 program.parse(process.argv)

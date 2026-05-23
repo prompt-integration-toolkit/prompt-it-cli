@@ -1,7 +1,23 @@
+export type PromptMetadata = {
+  name: string
+  title: string
+  author: string
+  description?: string
+  version?: string
+  tags?: string[]
+  visibility?: string
+  createdAt?: string
+  updatedAt?: string
+  path?: string
+}
+
 const REGISTRY_RAW_BASE_URL =
   'https://raw.githubusercontent.com/Prompt-It-org/prompt-it-registry/main'
 
-export async function getPromptContent(user, promptName) {
+export async function getPromptContent(
+  user: string,
+  promptName: string
+): Promise<string> {
   const url = `${REGISTRY_RAW_BASE_URL}/users/${user}/${promptName}/prompt.md`
 
   const response = await fetch(url)
@@ -17,7 +33,10 @@ export async function getPromptContent(user, promptName) {
   return response.text()
 }
 
-export async function getPromptMetadata(user, promptName) {
+export async function getPromptMetadata(
+  user: string,
+  promptName: string
+): Promise<PromptMetadata> {
   const url = `${REGISTRY_RAW_BASE_URL}/users/${user}/${promptName}/metadata.json`
 
   const response = await fetch(url)
@@ -30,5 +49,5 @@ export async function getPromptMetadata(user, promptName) {
     }
   }
 
-  return response.json()
+  return response.json() as Promise<PromptMetadata>
 }
