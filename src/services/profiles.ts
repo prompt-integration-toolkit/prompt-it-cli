@@ -19,15 +19,15 @@ export async function getProfileFromSession(
     .from('profiles')
     .select('id, username, display_name')
     .eq('id', session.user.id)
-    .single()
+    .maybeSingle()
 
   if (error) {
     throw new Error(`Could not get user profile: ${error.message}`)
   }
 
   if (!data) {
-    throw new Error('User profile not found.')
-  }
+  throw new Error('User profile not found. Run prompt-it register again or create a profile.')
+}
 
   return data
 }

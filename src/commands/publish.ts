@@ -12,7 +12,7 @@ import {
 import type { Command } from 'commander'
 
 import { getSession } from '../services/session.js'
-import { getProfileFromSession } from '../services/profile.js'
+import { getProfileFromSession } from '../services/profiles.js'
 import {
   upsertGitHubFile,
   getGitHubTextFile
