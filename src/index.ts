@@ -1,9 +1,10 @@
 import { Command } from 'commander'
 import { registerGetCommand } from './commands/get.js'
-import { registerRegisterCommand } from './commands/account/register.js'
-import { registerLoginCommand } from './commands/account/login.js'
-import { registerMeCommand } from './commands/account/me.js'
-import { registerLogoutCommand } from './commands/account/logout.js'
+import { registerRegisterCommand } from './commands/accounts/register.js'
+import { registerLoginCommand } from './commands/accounts/login.js'
+import { registerMeCommand } from './commands/accounts/me.js'
+import { registerLogoutCommand } from './commands/accounts/logout.js'
+import { registerInitCommand } from './commands/init.js'
 
 const program = new Command()
 
@@ -17,6 +18,7 @@ registerRegisterCommand(program)
 registerLoginCommand(program)
 registerMeCommand(program)
 registerLogoutCommand(program)
+registerInitCommand(program)
 
 program
   .command('help')
