@@ -6,12 +6,8 @@ import clipboard from 'clipboardy'
 import { select, confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
+import { supabase } from '../services/supabase.js'
 import { parsePromptRef } from '../utils/promptRef.js'
-import {
-  getPromptContent,
-  getPromptMetadata,
-  type PromptMetadata
-} from '../services/registry.js'
 
 type GetCommandOptions = {
   copy?: boolean
@@ -20,10 +16,20 @@ type GetCommandOptions = {
 
 type PromptAction = 'copy' | 'file' | 'skill'
 
+type SupabasePrompt = {
+  name: string
+  title: string
+  description: string
+  username: string
+  current_content: string
+  current_version: string
+  tags: string[]
+}
+
 export function registerGetCommand(program: Command): void {
   program
     .command('get')
-    .description('Get a prompt from the Prompt-it registry.')
+    .description('Get a prompt from Prompt-it.')
     .argument('<promptRef>', 'Prompt reference. Example: prompt-it/test')
     .option('--copy', 'Copy prompt content directly to clipboard.')
     .option('--file', 'Create a markdown file with the prompt content.')
@@ -31,10 +37,12 @@ export function registerGetCommand(program: Command): void {
       try {
         const { user, promptName } = parsePromptRef(promptRef)
 
-        const [content, metadata] = await Promise.all([
-          getPromptContent(user, promptName),
-          getPromptMetadata(user, promptName)
-        ])
+        const prompt = await getPromptFromSupabase(user, promptName)
+
+        if (!prompt) {
+          console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
+          return
+        }
 
         if (options.copy && options.file) {
           console.log(
@@ -44,16 +52,16 @@ export function registerGetCommand(program: Command): void {
         }
 
         if (options.copy) {
-          await copyPromptToClipboard(content, metadata)
+          await copyPromptToClipboard(prompt)
           return
         }
 
         if (options.file) {
-          await createPromptFile(content, promptName)
+          await createPromptFile(prompt)
           return
         }
 
-        await showPromptAndAskAction(content, metadata, promptName)
+        await showPromptAndAskAction(prompt)
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unexpected error occurred.'
@@ -63,16 +71,34 @@ export function registerGetCommand(program: Command): void {
     })
 }
 
-async function showPromptAndAskAction(
-  content: string,
-  metadata: PromptMetadata,
+async function getPromptFromSupabase(
+  username: string,
   promptName: string
-): Promise<void> {
+): Promise<SupabasePrompt | null> {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select(
+      'name, title, description, username, current_content, current_version, tags'
+    )
+    .eq('username', username)
+    .eq('name', promptName)
+    .eq('visibility', 'public')
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Could not fetch prompt: ${error.message}`)
+  }
+
+  return data
+}
+
+async function showPromptAndAskAction(prompt: SupabasePrompt): Promise<void> {
   console.log('')
-  console.log(chalk.cyan(`# ${metadata.title || promptName}`))
-  console.log(chalk.gray(`Author: ${metadata.author || 'unknown'}`))
+  console.log(chalk.cyan(`# ${prompt.title || prompt.name}`))
+  console.log(chalk.gray(`Author: ${prompt.username}`))
+  console.log(chalk.gray(`Version: ${prompt.current_version}`))
   console.log('')
-  console.log(content)
+  console.log(prompt.current_content)
   console.log('')
 
   const action = await select<PromptAction>({
@@ -99,12 +125,12 @@ async function showPromptAndAskAction(
   }
 
   if (action === 'copy') {
-    await copyPromptToClipboard(content, metadata)
+    await copyPromptToClipboard(prompt)
     return
   }
 
   if (action === 'file') {
-    await createPromptFile(content, promptName)
+    await createPromptFile(prompt)
     return
   }
 
@@ -114,24 +140,14 @@ async function showPromptAndAskAction(
   }
 }
 
-async function copyPromptToClipboard(
-  content: string,
-  metadata: PromptMetadata
-): Promise<void> {
-  await clipboard.write(content)
+async function copyPromptToClipboard(prompt: SupabasePrompt): Promise<void> {
+  await clipboard.write(prompt.current_content)
 
-  console.log(
-    chalk.green(
-      `Copied "${metadata.title || metadata.name || 'prompt'}" to clipboard.`
-    )
-  )
+  console.log(chalk.green(`Copied "${prompt.title || prompt.name}" to clipboard.`))
 }
 
-async function createPromptFile(
-  content: string,
-  promptName: string
-): Promise<void> {
-  const fileName = `${promptName}.md`
+async function createPromptFile(prompt: SupabasePrompt): Promise<void> {
+  const fileName = `${prompt.name}.md`
   const filePath = path.join(process.cwd(), fileName)
 
   const exists = await fs.pathExists(filePath)
@@ -148,7 +164,7 @@ async function createPromptFile(
     }
   }
 
-  await fs.writeFile(filePath, content, 'utf8')
+  await fs.writeFile(filePath, prompt.current_content, 'utf8')
 
   console.log(chalk.green(`Created file: ${fileName}`))
 }
