@@ -22,6 +22,7 @@ type PromptResult = {
 }
 
 type UserResult = {
+  id: string
   username: string
   display_name: string | null
 }
@@ -175,7 +176,6 @@ function renderPromptResults(params: {
   currentPage: number
   totalPages: number
 }): void {
-  const remainingPages = params.totalPages - params.currentPage
 
   console.log('')
   console.log(chalk.cyan(`Search results for "${params.query}"`))
@@ -185,7 +185,6 @@ function renderPromptResults(params: {
       `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
     )
   )
-  console.log(chalk.gray(`Remaining pages: ${remainingPages}`))
   console.log('')
 
   params.results.forEach((prompt, index) => {
@@ -241,7 +240,7 @@ async function paginateUserResults(params: {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('username, display_name')
+      .select('id, username, display_name')
       .or(
         `username.ilike.${createIlikePattern(
           params.query
@@ -254,12 +253,12 @@ async function paginateUserResults(params: {
       throw new Error(`Could not fetch user results: ${error.message}`)
     }
 
-    renderUserResults({
-      query: params.query,
-      results: data ?? [],
-      total: params.total,
-      currentPage,
-      totalPages
+    await renderUserResults({
+        query: params.query,
+        results: data ?? [],
+        total: params.total,
+        currentPage,
+        totalPages
     })
 
     if (totalPages <= 1) {
@@ -286,14 +285,13 @@ async function paginateUserResults(params: {
   }
 }
 
-function renderUserResults(params: {
+async function renderUserResults(params: {
   query: string
   results: UserResult[]
   total: number
   currentPage: number
   totalPages: number
-}): void {
-  const remainingPages = params.totalPages - params.currentPage
+}): Promise<void> {
 
   console.log('')
   console.log(chalk.cyan(`Users found for "${params.query}"`))
@@ -302,11 +300,12 @@ function renderUserResults(params: {
       `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
     )
   )
-  console.log(chalk.gray(`Remaining pages: ${remainingPages}`))
+  
   console.log('')
 
-  params.results.forEach((user, index) => {
+  for (const [index, user] of params.results.entries()) {
     const globalIndex = (params.currentPage - 1) * RESULTS_PER_PAGE + index + 1
+    const promptsCount = await countPublicPromptsByUserId(user.id)
 
     console.log(chalk.bold(`${globalIndex}. ${user.username}`))
 
@@ -314,8 +313,9 @@ function renderUserResults(params: {
       console.log(chalk.gray(`   Display name: ${user.display_name}`))
     }
 
+    console.log(chalk.gray(`   Public prompts: ${promptsCount}`))
     console.log('')
-  })
+  }
 }
 
 type PageOption = {
@@ -356,4 +356,21 @@ async function askPageAction(
 
 function createIlikePattern(query: string): string {
   return `%${query.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`
+}
+
+async function countPublicPromptsByUserId(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('prompts')
+    .select('id', {
+      count: 'exact',
+      head: true
+    })
+    .eq('owner_id', userId)
+    .eq('visibility', 'public')
+
+  if (error) {
+    throw new Error(`Could not count user prompts: ${error.message}`)
+  }
+
+  return count ?? 0
 }
