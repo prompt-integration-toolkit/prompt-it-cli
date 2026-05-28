@@ -1,0 +1,11 @@
+{
+  "prompt-file": "EXAMPLE.md",
+  "name": "your-prompt-name2",
+  "title": "Your Prompt Title",
+  "description": "What is the purpose of your prompt?",
+  "version": "1.0.0",
+  "tags": [
+    "example_tag1",
+    "example_tag2"
+  ]
+}

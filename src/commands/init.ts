@@ -10,6 +10,7 @@ type PromptDetailsTemplate = {
   name: string
   title: string
   description: string
+  version: string
   tags: string[]
 }
 
@@ -20,6 +21,7 @@ const promptDetailsTemplate: PromptDetailsTemplate = {
   name: 'your-prompt-name',
   title: 'Your Prompt Title',
   description: 'What is the purpose of your prompt?',
+  version: '1.0.0',
   tags: ['example_tag1', 'example_tag2']
 }
 

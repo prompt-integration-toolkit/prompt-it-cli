@@ -2,27 +2,13 @@ import path from 'node:path'
 import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
-import {
-  text,
-  confirm,
-  isCancel,
-  cancel,
-  outro
-} from '@clack/prompts'
+import { confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
+import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
-import { getProfileFromSession } from '../services/profiles.js'
-import {
-  upsertGitHubFile,
-  getGitHubTextFile
-} from '../services/github.js'
-import {
-  readPromptDetails,
-  normalizeTags,
-  type PromptDetails
-} from '../utils/promptDetails.js'
-import { isValidUsername } from '../utils/validators.js'
+import { getProfileFromSession } from '../services/profile.js' 
+import { readPromptDetails, normalizeTags } from '../utils/promptDetails.js'
 
 type PublishOptions = {
   name?: string
@@ -31,35 +17,10 @@ type PublishOptions = {
   tags?: string
 }
 
-type PromptMetadata = {
-  name: string
-  title: string
-  description: string
-  author: string
-  version: string
-  tags: string[]
-  visibility: 'public'
-  createdAt: string
-  updatedAt: string
-  path: string
-}
-
-type UserRegistry = {
-  owner: string
-  prompts: {
-    name: string
-    title: string
-    version: string
-    description: string
-    path: string
-    metadata: string
-  }[]
-}
-
 export function registerPublishCommand(program: Command): void {
   program
     .command('publish')
-    .description('Publish a prompt to the Prompt-it registry.')
+    .description('Publish a prompt to Prompt-it.')
     .argument('[promptFile]', 'Markdown prompt file.')
     .option('--name <name>', 'Prompt name.')
     .option('--title <title>', 'Prompt title.')
@@ -75,49 +36,58 @@ export function registerPublishCommand(program: Command): void {
           return
         }
 
+        await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        })
+
         const profile = await getProfileFromSession(session)
-
-        if (!isValidUsername(profile.username)) {
-          console.log(chalk.red('Invalid username in profile.'))
-          return
-        }
-
         const details = await readPromptDetails()
 
-        const promptFile = await resolvePromptFile(promptFileArg, details)
-        const name = await resolveTextValue({
-          value: options.name || details?.name,
-          message: 'Prompt name:'
-        })
-
-        if (isCancel(name)) {
-          cancel('Publish cancelled.')
+        if (!details && !promptFileArg) {
+          console.log(chalk.red('prompt-details.json not found.'))
+          console.log(chalk.gray('Run: prompt-it init'))
           return
         }
 
-        const title = await resolveTextValue({
-          value: options.title || details?.title,
-          message: 'Prompt title:'
-        })
+        const promptFile = promptFileArg || details?.['prompt-file']
 
-        if (isCancel(title)) {
-          cancel('Publish cancelled.')
+        if (!promptFile) {
+          console.log(chalk.red('Prompt file is required.'))
           return
         }
 
-        const description = await resolveTextValue({
-          value: options.description || details?.description,
-          message: 'Prompt description:'
-        })
-
-        if (isCancel(description)) {
-          cancel('Publish cancelled.')
-          return
-        }
-
+        const name = options.name || details?.name
+        const title = options.title || details?.title
+        const description = options.description || details?.description
+        const version = details?.version || '1.0.0'
         const tags = options.tags
           ? normalizeTags(options.tags)
           : normalizeTags(details?.tags)
+
+        if (!name || !title || !description) {
+          console.log(chalk.red('Missing prompt details.'))
+          console.log(
+            chalk.gray(
+              'Required fields: name, title, description. Use prompt-details.json or command flags.'
+            )
+          )
+          return
+        }
+
+        if (!isValidPromptName(name)) {
+          console.log(
+            chalk.red(
+              'Invalid prompt name. Use only letters, numbers, hyphen or underscore.'
+            )
+          )
+          return
+        }
+
+        if (!isValidSemver(version)) {
+          console.log(chalk.red('Invalid version. Use format like 1.0.0.'))
+          return
+        }
 
         const promptFilePath = path.join(process.cwd(), String(promptFile))
         const promptFileExists = await fs.pathExists(promptFilePath)
@@ -129,39 +99,32 @@ export function registerPublishCommand(program: Command): void {
 
         const promptContent = await fs.readFile(promptFilePath, 'utf8')
 
-        const now = new Date().toISOString().split('T')[0]
-        const promptName = String(name)
+        if (!promptContent.trim()) {
+          console.log(chalk.red('Prompt file is empty.'))
+          return
+        }
 
-        const promptPath = `users/${profile.username}/${promptName}/prompt.md`
-        const metadataPath = `users/${profile.username}/${promptName}/metadata.json`
-        const registryPath = `users/${profile.username}/registry.json`
+        const existingPrompt = await findExistingPrompt(profile.username, name)
 
-        const metadata: PromptMetadata = {
-          name: promptName,
-          title: String(title),
-          description: String(description),
-          author: profile.username,
-          version: '1.0.0',
-          tags,
-          visibility: 'public',
-          createdAt: now,
-          updatedAt: now,
-          path: promptPath
+        if (existingPrompt) {
+          console.log(chalk.red(`Prompt already exists: ${profile.username}/${name}`))
+          console.log(chalk.gray('Use prompt-it publish update to update it.'))
+          return
         }
 
         console.log('')
         console.log(chalk.cyan('Publish summary'))
         console.log(chalk.gray('---------------'))
         console.log(`${chalk.bold('Author:')} ${profile.username}`)
-        console.log(`${chalk.bold('Name:')} ${metadata.name}`)
-        console.log(`${chalk.bold('Title:')} ${metadata.title}`)
-        console.log(`${chalk.bold('Description:')} ${metadata.description}`)
-        console.log(`${chalk.bold('Tags:')} ${metadata.tags.join(', ') || 'none'}`)
-        console.log(`${chalk.bold('Path:')} ${metadata.path}`)
+        console.log(`${chalk.bold('Name:')} ${name}`)
+        console.log(`${chalk.bold('Title:')} ${title}`)
+        console.log(`${chalk.bold('Description:')} ${description}`)
+        console.log(`${chalk.bold('Version:')} ${version}`)
+        console.log(`${chalk.bold('Tags:')} ${tags.join(', ') || 'none'}`)
         console.log('')
 
         const shouldPublish = await confirm({
-          message: 'Publish this prompt?',
+          message: 'Publish prompt?',
           initialValue: true
         })
 
@@ -170,32 +133,45 @@ export function registerPublishCommand(program: Command): void {
           return
         }
 
-        await upsertGitHubFile({
-          path: promptPath,
-          content: promptContent,
-          message: `publish prompt ${profile.username}/${promptName}`
-        })
+        const { data: promptData, error: promptError } = await supabase
+          .from('prompts')
+          .insert({
+            owner_id: profile.id,
+            username: profile.username,
+            name,
+            title,
+            description,
+            current_content: promptContent,
+            current_version: version,
+            tags,
+            visibility: 'public'
+          })
+          .select('id')
+          .single()
 
-        await upsertGitHubFile({
-          path: metadataPath,
-          content: JSON.stringify(metadata, null, 2),
-          message: `publish metadata ${profile.username}/${promptName}`
-        })
+        if (promptError) {
+          console.log(chalk.red(`Publish error: ${promptError.message}`))
+          return
+        }
 
-        const registry = await buildUpdatedUserRegistry({
-          registryPath,
-          owner: profile.username,
-          metadata,
-          metadataPath
-        })
+        const { error: versionError } = await supabase
+          .from('prompt_versions')
+          .insert({
+            prompt_id: promptData.id,
+            version,
+            base_version: null,
+            change_type: 'snapshot',
+            diff: null,
+            snapshot_content: promptContent,
+            message: 'Initial publish'
+          })
 
-        await upsertGitHubFile({
-          path: registryPath,
-          content: JSON.stringify(registry, null, 2),
-          message: `update registry ${profile.username}`
-        })
+        if (versionError) {
+          console.log(chalk.red(`Version error: ${versionError.message}`))
+          return
+        }
 
-        outro(chalk.green(`Published ${profile.username}/${promptName} successfully.`))
+        outro(chalk.green(`Prompt published successfully: ${profile.username}/${name}`))
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unexpected error occurred.'
@@ -205,82 +181,25 @@ export function registerPublishCommand(program: Command): void {
     })
 }
 
-async function resolvePromptFile(
-  promptFileArg: string | undefined,
-  details: PromptDetails | null
-): Promise<string> {
-  if (promptFileArg) {
-    return promptFileArg
+async function findExistingPrompt(username: string, name: string) {
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('id')
+    .eq('username', username)
+    .eq('name', name)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(`Could not check existing prompt: ${error.message}`)
   }
 
-  if (details?.['prompt-file']) {
-    return details['prompt-file']
-  }
-
-  const promptFile = await text({
-    message: 'Prompt file:',
-    placeholder: 'my-prompt.md',
-    validate(value) {
-      if (!value) return 'Prompt file is required.'
-    }
-  })
-
-  if (isCancel(promptFile)) {
-    throw new Error('Publish cancelled.')
-  }
-
-  return String(promptFile)
+  return data
 }
 
-async function resolveTextValue(params: {
-  value?: string
-  message: string
-}): Promise<string | symbol> {
-  if (params.value && params.value.trim()) {
-    return params.value.trim()
-  }
-
-  return text({
-    message: params.message,
-    validate(value) {
-      if (!value) return 'This field is required.'
-    }
-  })
+function isValidPromptName(name: string): boolean {
+  return /^[a-zA-Z0-9_-]{3,60}$/.test(name)
 }
 
-async function buildUpdatedUserRegistry(params: {
-  registryPath: string
-  owner: string
-  metadata: PromptMetadata
-  metadataPath: string
-}): Promise<UserRegistry> {
-  const currentRegistryText = await getGitHubTextFile(params.registryPath)
-
-  const registry: UserRegistry = currentRegistryText
-    ? JSON.parse(currentRegistryText)
-    : {
-        owner: params.owner,
-        prompts: []
-      }
-
-  const nextPrompt = {
-    name: params.metadata.name,
-    title: params.metadata.title,
-    version: params.metadata.version,
-    description: params.metadata.description,
-    path: params.metadata.path,
-    metadata: params.metadataPath
-  }
-
-  const existingIndex = registry.prompts.findIndex(
-    (prompt) => prompt.name === params.metadata.name
-  )
-
-  if (existingIndex >= 0) {
-    registry.prompts[existingIndex] = nextPrompt
-  } else {
-    registry.prompts.push(nextPrompt)
-  }
-
-  return registry
+function isValidSemver(version: string): boolean {
+  return /^\d+\.\d+\.\d+$/.test(version)
 }

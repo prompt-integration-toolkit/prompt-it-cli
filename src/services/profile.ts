@@ -26,8 +26,10 @@ export async function getProfileFromSession(
   }
 
   if (!data) {
-  throw new Error('User profile not found. Run prompt-it register again or create a profile.')
-}
+    throw new Error(
+      'User profile not found. Run prompt-it register again or create a profile.'
+    )
+  }
 
   return data
 }

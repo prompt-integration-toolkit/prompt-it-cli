@@ -7,6 +7,7 @@ export type PromptDetails = {
   name: string
   title: string
   description: string
+  version: string
   tags: string[]
 }
 
