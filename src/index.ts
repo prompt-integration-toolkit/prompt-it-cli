@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 
+import { registerDeleteCommand } from './commands/delete.js'
 import { registerGetCommand } from './commands/get.js'
 import { registerInitCommand } from './commands/init.js'
 import { registerLoginCommand } from './commands/accounts/login.js'
@@ -23,6 +24,7 @@ registerLoginCommand(program)
 registerLogoutCommand(program)
 registerMeCommand(program)
 registerPublishCommand(program)
+registerDeleteCommand(program)
 registerGetCommand(program)
 registerSearchCommand(program)
 registerUsesCommand(program)
