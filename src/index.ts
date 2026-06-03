@@ -8,6 +8,7 @@ import { registerMeCommand } from './commands/accounts/me.js'
 import { registerPublishCommand } from './commands/publish.js'
 import { registerRegisterCommand } from './commands/accounts/register.js'
 import { registerSearchCommand } from './commands/search.js'
+import { registerUsesCommand } from './commands/uses.js'
 
 const program = new Command()
 
@@ -24,6 +25,7 @@ registerMeCommand(program)
 registerPublishCommand(program)
 registerGetCommand(program)
 registerSearchCommand(program)
+registerUsesCommand(program)
 
 program
   .command('help')

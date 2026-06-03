@@ -10,6 +10,7 @@ import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
 import { getProfileFromSession } from '../services/profile.js'
 import { readPromptDetails, normalizeTags } from '../utils/promptDetails.js'
+import { assertWithinPostLimit } from '../services/limits.js'
 
 type PublishOptions = {
   name?: string
@@ -143,6 +144,8 @@ async function handleInitialPublish(
       console.log(chalk.gray('Use: prompt-it publish update'))
       return
     }
+
+    await assertWithinPostLimit(profile.id)
 
     console.log('')
     console.log(chalk.cyan('Publish summary'))
@@ -299,6 +302,8 @@ async function handlePublishUpdate(
       )
       return
     }
+
+    await assertWithinPostLimit(profile.id)
 
     const newContent = await readPromptFile(promptFile)
 
