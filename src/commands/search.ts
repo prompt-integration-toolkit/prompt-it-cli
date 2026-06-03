@@ -1,5 +1,5 @@
 import chalk from 'chalk'
-import { select, isCancel, cancel, outro } from '@clack/prompts'
+import { select, isCancel, cancel, outro, spinner } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -67,78 +67,64 @@ export function registerSearchCommand(program: Command): void {
 }
 
 async function searchPrompts(query: string): Promise<void> {
-  const result = await findPromptSearchField(query)
+  const s = spinner({ indicator: 'timer' })
+  s.start('Searching prompts...')
 
-  if (!result) {
-    console.log(chalk.yellow(`No results found for "${query}".`))
+  const pattern = createIlikePattern(query)
+
+  // Run SELECT + COUNT for all fields simultaneously — no more sequential COUNT queries
+  const fieldResults = await Promise.all(
+    promptSearchFields.map(field =>
+      supabase
+        .from('prompts')
+        .select('username, name, title, description, current_version, tags', {
+          count: 'exact'
+        })
+        .eq('visibility', 'public')
+        .ilike(field, pattern)
+        .order('updated_at', { ascending: false })
+        .range(0, RESULTS_PER_PAGE - 1)
+    )
+  )
+
+  const matchIndex = fieldResults.findIndex(
+    r => !r.error && r.count != null && r.count > 0
+  )
+
+  if (matchIndex === -1) {
+    s.stop(chalk.yellow(`No results found for "${query}".`))
     return
   }
 
+  const { data, count } = fieldResults[matchIndex]
+  const field = promptSearchFields[matchIndex]
+  const total = count!
+
+  s.stop(chalk.green(`Found ${total} result(s).`))
+
   await paginatePromptResults({
     query,
-    field: result.field,
-    total: result.total
+    field,
+    total,
+    initialData: (data ?? []) as PromptResult[]
   })
-}
-
-async function findPromptSearchField(
-  query: string
-): Promise<{ field: PromptSearchField; total: number } | null> {
-  const pattern = createIlikePattern(query)
-
-  for (const field of promptSearchFields) {
-    const { count, error } = await supabase
-      .from('prompts')
-      .select('id', {
-        count: 'exact',
-        head: true
-      })
-      .eq('visibility', 'public')
-      .ilike(field, pattern)
-
-    if (error) {
-      throw new Error(`Could not search prompts: ${error.message}`)
-    }
-
-    if (count && count > 0) {
-      return {
-        field,
-        total: count
-      }
-    }
-  }
-
-  return null
 }
 
 async function paginatePromptResults(params: {
   query: string
   field: PromptSearchField
   total: number
+  initialData: PromptResult[]
 }): Promise<void> {
   const totalPages = Math.ceil(params.total / RESULTS_PER_PAGE)
   let currentPage = 1
+  let currentData = params.initialData
 
   while (true) {
-    const from = (currentPage - 1) * RESULTS_PER_PAGE
-    const to = from + RESULTS_PER_PAGE - 1
-
-    const { data, error } = await supabase
-      .from('prompts')
-      .select('username, name, title, description, current_version, tags')
-      .eq('visibility', 'public')
-      .ilike(params.field, createIlikePattern(params.query))
-      .order('updated_at', { ascending: false })
-      .range(from, to)
-
-    if (error) {
-      throw new Error(`Could not fetch prompt results: ${error.message}`)
-    }
-
     renderPromptResults({
       query: params.query,
       field: params.field,
-      results: data ?? [],
+      results: currentData,
       total: params.total,
       currentPage,
       totalPages
@@ -158,13 +144,28 @@ async function paginatePromptResults(params: {
 
     if (action === 'next' && currentPage < totalPages) {
       currentPage++
+    } else if (action === 'previous' && currentPage > 1) {
+      currentPage--
+    } else {
       continue
     }
 
-    if (action === 'previous' && currentPage > 1) {
-      currentPage--
-      continue
+    const from = (currentPage - 1) * RESULTS_PER_PAGE
+    const to = from + RESULTS_PER_PAGE - 1
+
+    const { data, error } = await supabase
+      .from('prompts')
+      .select('username, name, title, description, current_version, tags')
+      .eq('visibility', 'public')
+      .ilike(params.field, createIlikePattern(params.query))
+      .order('updated_at', { ascending: false })
+      .range(from, to)
+
+    if (error) {
+      throw new Error(`Could not fetch prompt results: ${error.message}`)
     }
+
+    currentData = (data ?? []) as PromptResult[]
   }
 }
 
@@ -176,7 +177,6 @@ function renderPromptResults(params: {
   currentPage: number
   totalPages: number
 }): void {
-
   console.log('')
   console.log(chalk.cyan(`Search results for "${params.query}"`))
   console.log(chalk.gray(`Matched by: ${params.field}`))
@@ -204,61 +204,52 @@ function renderPromptResults(params: {
 async function searchUsers(query: string): Promise<void> {
   const pattern = createIlikePattern(query)
 
-  const { count, error: countError } = await supabase
-    .from('profiles')
-    .select('id', {
-      count: 'exact',
-      head: true
-    })
-    .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+  const s = spinner({ indicator: 'timer' })
+  s.start('Searching users...')
 
-  if (countError) {
-    throw new Error(`Could not search users: ${countError.message}`)
+  // SELECT + COUNT combined into a single query
+  const { data, count, error } = await supabase
+    .from('profiles')
+    .select('id, username, display_name', { count: 'exact' })
+    .or(`username.ilike.${pattern},display_name.ilike.${pattern}`)
+    .order('username', { ascending: true })
+    .range(0, RESULTS_PER_PAGE - 1)
+
+  if (error) {
+    s.stop()
+    throw new Error(`Could not search users: ${error.message}`)
   }
 
   if (!count || count <= 0) {
-    console.log(chalk.yellow(`No users found for "${query}".`))
+    s.stop(chalk.yellow(`No users found for "${query}".`))
     return
   }
 
+  s.stop(chalk.green(`Found ${count} user(s).`))
+
   await paginateUserResults({
     query,
-    total: count
+    total: count,
+    initialData: (data ?? []) as UserResult[]
   })
 }
 
 async function paginateUserResults(params: {
   query: string
   total: number
+  initialData: UserResult[]
 }): Promise<void> {
   const totalPages = Math.ceil(params.total / RESULTS_PER_PAGE)
   let currentPage = 1
+  let currentData = params.initialData
 
   while (true) {
-    const from = (currentPage - 1) * RESULTS_PER_PAGE
-    const to = from + RESULTS_PER_PAGE - 1
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, username, display_name')
-      .or(
-        `username.ilike.${createIlikePattern(
-          params.query
-        )},display_name.ilike.${createIlikePattern(params.query)}`
-      )
-      .order('username', { ascending: true })
-      .range(from, to)
-
-    if (error) {
-      throw new Error(`Could not fetch user results: ${error.message}`)
-    }
-
     await renderUserResults({
-        query: params.query,
-        results: data ?? [],
-        total: params.total,
-        currentPage,
-        totalPages
+      query: params.query,
+      results: currentData,
+      total: params.total,
+      currentPage,
+      totalPages
     })
 
     if (totalPages <= 1) {
@@ -275,13 +266,28 @@ async function paginateUserResults(params: {
 
     if (action === 'next' && currentPage < totalPages) {
       currentPage++
+    } else if (action === 'previous' && currentPage > 1) {
+      currentPage--
+    } else {
       continue
     }
 
-    if (action === 'previous' && currentPage > 1) {
-      currentPage--
-      continue
+    const from = (currentPage - 1) * RESULTS_PER_PAGE
+    const to = from + RESULTS_PER_PAGE - 1
+    const nextPattern = createIlikePattern(params.query)
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .or(`username.ilike.${nextPattern},display_name.ilike.${nextPattern}`)
+      .order('username', { ascending: true })
+      .range(from, to)
+
+    if (error) {
+      throw new Error(`Could not fetch user results: ${error.message}`)
     }
+
+    currentData = (data ?? []) as UserResult[]
   }
 }
 
@@ -292,7 +298,6 @@ async function renderUserResults(params: {
   currentPage: number
   totalPages: number
 }): Promise<void> {
-
   console.log('')
   console.log(chalk.cyan(`Users found for "${params.query}"`))
   console.log(
@@ -300,12 +305,15 @@ async function renderUserResults(params: {
       `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
     )
   )
-  
   console.log('')
+
+  // Fetch all prompt counts for this page in parallel — no more sequential queries
+  const promptCounts = await Promise.all(
+    params.results.map(user => countPublicPromptsByUserId(user.id))
+  )
 
   for (const [index, user] of params.results.entries()) {
     const globalIndex = (params.currentPage - 1) * RESULTS_PER_PAGE + index + 1
-    const promptsCount = await countPublicPromptsByUserId(user.id)
 
     console.log(chalk.bold(`${globalIndex}. ${user.username}`))
 
@@ -313,7 +321,7 @@ async function renderUserResults(params: {
       console.log(chalk.gray(`   Display name: ${user.display_name}`))
     }
 
-    console.log(chalk.gray(`   Public prompts: ${promptsCount}`))
+    console.log(chalk.gray(`   Public prompts: ${promptCounts[index]}`))
     console.log('')
   }
 }
