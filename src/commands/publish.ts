@@ -409,7 +409,6 @@ async function findExistingPrompt(
     )
     .eq('username', username)
     .eq('name', name)
-    .in('status', ['active', 'deleted'])
     .maybeSingle()
 
   if (error) {
