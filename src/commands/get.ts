@@ -102,6 +102,7 @@ async function getPromptFromSupabase(
     .eq('username', username)
     .eq('name', promptName)
     .eq('visibility', 'public')
+    .eq('status', 'active')
     .maybeSingle()
 
   if (error) {
