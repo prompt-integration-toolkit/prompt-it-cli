@@ -16,3 +16,10 @@ It provides a simple way to interact with Prompt-it directly from the command li
 
 ```bash
 npm install -g prompt-it
+```
+
+---
+
+## Documentation
+
+**CLI** - [Here](https://github.com/Prompt-It-org/prompt-it-cli/blob/main/docs/DOCS.md)
