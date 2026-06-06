@@ -115,11 +115,16 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
 
   const deletingCurrent = versionsToDelete.some(v => v.version === prompt.current_version)
 
+  let newCurrentVersion: string | null = null
+
   if (deletingCurrent) {
-    console.log('')
-    console.log(chalk.yellow(`Warning: This deletion would affect the current version ${prompt.current_version}.`))
-    console.log(chalk.red('Create a newer snapshot first or delete the entire prompt.'))
-    return
+    if (targetIndex === 0) {
+      console.log('')
+      console.log(chalk.yellow(`Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`))
+      console.log(chalk.red('Please delete the entire prompt instead.'))
+      return
+    }
+    newCurrentVersion = sortedVersions[targetIndex - 1].version
   }
 
   console.log('')
@@ -132,6 +137,10 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
     const isTarget = v.version === version
     console.log(`  - ${v.version} (${v.change_type})${isTarget ? chalk.gray(' [target]') : ''}`)
   })
+  
+  if (newCurrentVersion) {
+    console.log(`${chalk.bold('New current version:')}  ${chalk.green(newCurrentVersion)}`)
+  }
   console.log('')
 
   const confirmation = await text({
@@ -159,6 +168,17 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
   if (delError) {
     console.log(chalk.red(`Delete error: ${delError.message}`))
     return
+  }
+
+  if (newCurrentVersion) {
+    const { error: updateError } = await supabase
+      .from('prompts')
+      .update({ current_version: newCurrentVersion })
+      .eq('id', prompt.id)
+
+    if (updateError) {
+      console.log(chalk.red(`Warning: Versions deleted, but could not update current_version: ${updateError.message}`))
+    }
   }
 
   outro(chalk.green(`Deleted ${versionsToDelete.length} version(s) successfully.`))
