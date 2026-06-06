@@ -160,14 +160,24 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
 
   const idsToDelete = versionsToDelete.map(v => v.id)
   
-  const { error: delError } = await supabase
+  const { data: deletedRows, error: delError } = await supabase
     .from('prompt_versions')
     .delete()
     .in('id', idsToDelete)
+    .select('id')
 
   if (delError) {
     console.log(chalk.red(`Delete error: ${delError.message}`))
     return
+  }
+
+  if (!deletedRows || deletedRows.length === 0) {
+    console.log(chalk.red(`Error: No versions were deleted. This usually means Supabase Row Level Security (RLS) is blocking the DELETE operation on 'prompt_versions'. Please check your Supabase policies.`))
+    return
+  }
+
+  if (deletedRows.length !== idsToDelete.length) {
+    console.log(chalk.yellow(`Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`))
   }
 
   if (newCurrentVersion) {
