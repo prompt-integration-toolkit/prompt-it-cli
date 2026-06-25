@@ -81,6 +81,7 @@ async function searchPrompts(query: string): Promise<void> {
           count: 'exact'
         })
         .eq('visibility', 'public')
+        .eq('status', 'active')
         .ilike(field, pattern)
         .order('updated_at', { ascending: false })
         .range(0, RESULTS_PER_PAGE - 1)
@@ -157,6 +158,7 @@ async function paginatePromptResults(params: {
       .from('prompts')
       .select('username, name, title, description, current_version, tags')
       .eq('visibility', 'public')
+      .eq('status', 'active')
       .ilike(params.field, createIlikePattern(params.query))
       .order('updated_at', { ascending: false })
       .range(from, to)
@@ -375,6 +377,7 @@ async function countPublicPromptsByUserId(userId: string): Promise<number> {
     })
     .eq('owner_id', userId)
     .eq('visibility', 'public')
+    .eq('status', 'active')
 
   if (error) {
     throw new Error(`Could not count user prompts: ${error.message}`)

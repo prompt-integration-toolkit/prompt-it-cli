@@ -5,6 +5,7 @@ import type { Command } from 'commander'
 import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
 import { getProfileFromSession } from '../services/profile.js'
+import { getPromptContentByVersion } from '../utils/promptResolver.js'
 
 type PromptRecord = {
   id: string
@@ -116,6 +117,7 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
   const deletingCurrent = versionsToDelete.some(v => v.version === prompt.current_version)
 
   let newCurrentVersion: string | null = null
+  let newCurrentContent: string | null = null
 
   if (deletingCurrent) {
     if (targetIndex === 0) {
@@ -125,6 +127,7 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
       return
     }
     newCurrentVersion = sortedVersions[targetIndex - 1].version
+    newCurrentContent = await getPromptContentByVersion(prompt.id, newCurrentVersion)
   }
 
   console.log('')
@@ -180,10 +183,13 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
     console.log(chalk.yellow(`Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`))
   }
 
-  if (newCurrentVersion) {
+  if (newCurrentVersion && newCurrentContent) {
     const { error: updateError } = await supabase
       .from('prompts')
-      .update({ current_version: newCurrentVersion })
+      .update({ 
+        current_version: newCurrentVersion,
+        current_content: newCurrentContent 
+      })
       .eq('id', prompt.id)
 
     if (updateError) {
