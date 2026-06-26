@@ -43,3 +43,6 @@ test/
 .cache/
 .tmp/
 temp/
+
+# Prompt-It
+prompt-details.json

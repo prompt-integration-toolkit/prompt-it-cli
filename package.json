@@ -8,19 +8,28 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "dev": "node ./bin/prompt-it.js",
     "start": "node ./bin/prompt-it.js"
   },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "@supabase/supabase-js": "^2.106.1",
     "chalk": "^5.0.0",
     "clipboardy": "^4.0.0",
     "commander": "^14.0.0",
+    "diff": "^9.0.0",
     "dotenv": "^17.4.2",
     "fs-extra": "^11.0.0"
   },
   "devDependencies": {
+    "@types/diff": "^7.0.2",
     "@types/fs-extra": "^11.0.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.0.0"

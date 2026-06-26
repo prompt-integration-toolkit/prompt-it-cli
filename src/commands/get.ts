@@ -7,6 +7,7 @@ import { select, confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
+import { getSession } from '../services/session.js'
 import { parsePromptRef } from '../utils/promptRef.js'
 
 type GetCommandOptions = {
@@ -16,59 +17,77 @@ type GetCommandOptions = {
 
 type PromptAction = 'copy' | 'file' | 'skill'
 
-type SupabasePrompt = {
-  name: string
-  title: string
-  description: string
-  username: string
-  current_content: string
-  current_version: string
-  tags: string[]
-}
+import {
+  SupabasePrompt,
+  ResolvedPrompt,
+  resolvePromptVersion
+} from '../utils/promptResolver.js'
 
 export function registerGetCommand(program: Command): void {
   program
     .command('get')
     .description('Get a prompt from Prompt-it.')
-    .argument('<promptRef>', 'Prompt reference. Example: prompt-it/test')
+    .argument('<promptRef>', 'Prompt reference. Example: miguel/test or miguel/test@1.0.1')
+    .argument('[action]', 'Optional action. Use "details" to create prompt-details.json.')
     .option('--copy', 'Copy prompt content directly to clipboard.')
     .option('--file', 'Create a markdown file with the prompt content.')
-    .action(async (promptRef: string, options: GetCommandOptions) => {
-      try {
-        const { user, promptName } = parsePromptRef(promptRef)
+    .action(
+      async (
+        promptRef: string,
+        action: string | undefined,
+        options: GetCommandOptions
+      ) => {
+        try {
+          const { user, promptName, version } = parsePromptRef(promptRef)
 
-        const prompt = await getPromptFromSupabase(user, promptName)
+          if (action && action !== 'details') {
+            console.log(chalk.red(`Unknown get action: ${action}`))
+            console.log(chalk.gray('Available action: details'))
+            return
+          }
 
-        if (!prompt) {
-          console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
-          return
+          const prompt = await getPromptFromSupabase(user, promptName)
+
+          if (!prompt) {
+            console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
+            return
+          }
+
+          const resolvedPrompt = await resolvePromptVersion(prompt, version)
+
+          if (options.copy && options.file) {
+            console.log(
+              chalk.red('Use only one option at a time: --copy or --file.')
+            )
+            return
+          }
+
+          if (action === 'details') {
+            await createPromptDetailsFile(resolvedPrompt)
+            return
+          }
+
+          if (options.copy) {
+            await copyPromptToClipboard(resolvedPrompt)
+            return
+          }
+
+          if (options.file) {
+            await createPromptFile(resolvedPrompt)
+            return
+          }
+
+          const isOwner = await checkIsPromptOwner(resolvedPrompt)
+
+          await showPromptAndAskAction(resolvedPrompt, isOwner)
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Unexpected error occurred.'
+
+          console.log(chalk.red(`Error: ${message}`))
         }
-
-        if (options.copy && options.file) {
-          console.log(
-            chalk.red('Use only one option at a time: --copy or --file.')
-          )
-          return
-        }
-
-        if (options.copy) {
-          await copyPromptToClipboard(prompt)
-          return
-        }
-
-        if (options.file) {
-          await createPromptFile(prompt)
-          return
-        }
-
-        await showPromptAndAskAction(prompt)
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
-
-        console.log(chalk.red(`Error: ${message}`))
       }
-    })
+    )
 }
 
 async function getPromptFromSupabase(
@@ -78,11 +97,12 @@ async function getPromptFromSupabase(
   const { data, error } = await supabase
     .from('prompts')
     .select(
-      'name, title, description, username, current_content, current_version, tags'
+      'id, owner_id, name, title, description, username, current_content, current_version, tags'
     )
     .eq('username', username)
     .eq('name', promptName)
     .eq('visibility', 'public')
+    .eq('status', 'active')
     .maybeSingle()
 
   if (error) {
@@ -92,13 +112,33 @@ async function getPromptFromSupabase(
   return data
 }
 
-async function showPromptAndAskAction(prompt: SupabasePrompt): Promise<void> {
+
+
+async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
+  const session = await getSession()
+
+  if (!session) {
+    return false
+  }
+
+  return session.user.id === prompt.owner_id
+}
+
+async function showPromptAndAskAction(
+  prompt: ResolvedPrompt,
+  isOwner: boolean
+): Promise<void> {
   console.log('')
   console.log(chalk.cyan(`# ${prompt.title || prompt.name}`))
   console.log(chalk.gray(`Author: ${prompt.username}`))
-  console.log(chalk.gray(`Version: ${prompt.current_version}`))
+  console.log(chalk.gray(`Version: ${prompt.resolved_version}`))
+
+  if (prompt.is_historical_version) {
+    console.log(chalk.gray(`Latest version: ${prompt.current_version}`))
+  }
+
   console.log('')
-  console.log(prompt.current_content)
+  console.log(prompt.resolved_content)
   console.log('')
 
   const action = await select<PromptAction>({
@@ -126,28 +166,48 @@ async function showPromptAndAskAction(prompt: SupabasePrompt): Promise<void> {
 
   if (action === 'copy') {
     await copyPromptToClipboard(prompt)
-    return
   }
 
   if (action === 'file') {
     await createPromptFile(prompt)
-    return
   }
 
   if (action === 'skill') {
     outro('Skill integration is coming soon.')
-    return
+  }
+
+  if (isOwner) {
+    await askToCreatePromptDetailsFile(prompt)
   }
 }
 
-async function copyPromptToClipboard(prompt: SupabasePrompt): Promise<void> {
-  await clipboard.write(prompt.current_content)
+async function askToCreatePromptDetailsFile(
+  prompt: ResolvedPrompt
+): Promise<void> {
+  const shouldCreateDetails = await confirm({
+    message: 'Get prompt-details.json?',
+    initialValue: false
+  })
+
+  if (isCancel(shouldCreateDetails) || shouldCreateDetails === false) {
+    return
+  }
+
+  await createPromptDetailsFile(prompt)
+}
+
+async function copyPromptToClipboard(prompt: ResolvedPrompt): Promise<void> {
+  await clipboard.write(prompt.resolved_content)
 
   console.log(chalk.green(`Copied "${prompt.title || prompt.name}" to clipboard.`))
 }
 
-async function createPromptFile(prompt: SupabasePrompt): Promise<void> {
-  const fileName = `${prompt.name}.md`
+async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
+  const fileName =
+    prompt.is_historical_version
+      ? `${prompt.name}@${prompt.resolved_version}.md`
+      : `${prompt.name}.md`
+
   const filePath = path.join(process.cwd(), fileName)
 
   const exists = await fs.pathExists(filePath)
@@ -164,7 +224,41 @@ async function createPromptFile(prompt: SupabasePrompt): Promise<void> {
     }
   }
 
-  await fs.writeFile(filePath, prompt.current_content, 'utf8')
+  await fs.writeFile(filePath, prompt.resolved_content, 'utf8')
+
+  console.log(chalk.green(`Created file: ${fileName}`))
+}
+
+async function createPromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
+  const fileName = 'prompt-details.json'
+  const filePath = path.join(process.cwd(), fileName)
+
+  const exists = await fs.pathExists(filePath)
+
+  if (exists) {
+    const shouldOverwrite = await confirm({
+      message: `${fileName} already exists. Overwrite?`,
+      initialValue: false
+    })
+
+    if (isCancel(shouldOverwrite) || shouldOverwrite === false) {
+      cancel('prompt-details.json creation cancelled.')
+      return
+    }
+  }
+
+  const details = {
+    'prompt-file': `${prompt.name}.md`,
+    name: prompt.name,
+    title: prompt.title,
+    description: prompt.description,
+    version: prompt.resolved_version,
+    tags: prompt.tags ?? []
+  }
+
+  await fs.writeJson(filePath, details, {
+    spaces: 2
+  })
 
   console.log(chalk.green(`Created file: ${fileName}`))
 }

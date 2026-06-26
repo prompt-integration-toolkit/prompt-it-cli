@@ -11,6 +11,7 @@ import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'
 import { isValidEmail, isValidUsername } from '../../utils/validators.js'
+import { saveSession } from '../../services/session.js'
 
 export function registerRegisterCommand(program: Command): void {
   program
@@ -32,33 +33,33 @@ export function registerRegisterCommand(program: Command): void {
         }
 
         const userPassword = await password({
-        message: 'Password:',
-        validate(value) {
+          message: 'Password:',
+          validate(value) {
             if (!value) return 'Password is required.'
             if (value.length < 6) {
-            return 'Password must have at least 6 characters.'
+              return 'Password must have at least 6 characters.'
             }
-        }
+          }
         })
 
         if (isCancel(userPassword)) {
-        cancel('Registration cancelled.')
-        return
+          cancel('Registration cancelled.')
+          return
         }
 
         const confirmPassword = await password({
-        message: 'Confirm password:',
-        validate(value) {
+          message: 'Confirm password:',
+          validate(value) {
             if (!value) return 'Password confirmation is required.'
             if (value !== userPassword) {
-            return 'Passwords do not match.'
+              return 'Passwords do not match.'
             }
-        }
+          }
         })
 
         if (isCancel(confirmPassword)) {
-        cancel('Registration cancelled.')
-        return
+          cancel('Registration cancelled.')
+          return
         }
 
         const username = await text({
@@ -79,8 +80,8 @@ export function registerRegisterCommand(program: Command): void {
         const usernameTaken = await usernameAlreadyExists(String(username))
 
         if (usernameTaken) {
-        console.log(chalk.red('This username is already taken. Choose another one.'))
-        return
+          console.log(chalk.red('This username is already taken. Choose another one.'))
+          return
         }
 
         const shouldCreate = await confirm({
@@ -126,7 +127,25 @@ export function registerRegisterCommand(program: Command): void {
           return
         }
 
-        outro(chalk.green('Account created successfully.'))
+        if (signUpData.session && signUpData.user) {
+          await saveSession({
+            access_token: signUpData.session.access_token,
+            refresh_token: signUpData.session.refresh_token,
+            user: {
+              id: signUpData.user.id,
+              email: signUpData.user.email ?? undefined
+            }
+          })
+
+          outro(chalk.green(`Account created and logged in as ${username}.`))
+          return
+        }
+
+        outro(
+          chalk.yellow(
+            'Account created. Please confirm your email before logging in.'
+          )
+        )
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unexpected error occurred.'
