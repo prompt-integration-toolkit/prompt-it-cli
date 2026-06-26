@@ -16,6 +16,24 @@ export function registerListCommand(program: Command): void {
     .argument('[target]', 'Target prompt. Example: "my-prompt" or "my-prompt@1.0.1"')
     .action(async (target: string | undefined) => {
       try {
+        // @username lookup — does not require login
+        if (target && target.startsWith('@')) {
+          const raw = target.slice(1) // remove the @
+
+          if (raw.includes('/')) {
+            console.log(chalk.red('Invalid format. Use prompt-it get ' + raw + ' to get a specific prompt.'))
+            return
+          }
+
+          if (!raw) {
+            console.log(chalk.red('Username is required. Use: prompt-it list @<username>'))
+            return
+          }
+
+          await listUserPublicPrompts(raw)
+          return
+        }
+
         const session = await getSession()
 
         if (!session) {
@@ -205,4 +223,56 @@ async function showVersionDiff(userId: string, promptName: string, targetVersion
     }
   }
   console.log('')
+}
+
+async function listUserPublicPrompts(username: string): Promise<void> {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', username)
+    .maybeSingle()
+
+  if (profileError) {
+    throw new Error(`Could not fetch user: ${profileError.message}`)
+  }
+
+  if (!profile) {
+    console.log(chalk.red(`User not found: @${username}`))
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('name, current_version, description')
+    .eq('owner_id', profile.id)
+    .eq('visibility', 'public')
+    .eq('status', 'active')
+    .order('name')
+
+  if (error) {
+    throw new Error(`Could not fetch prompts: ${error.message}`)
+  }
+
+  const prompts = data ?? []
+
+  if (prompts.length === 0) {
+    console.log(chalk.yellow(`@${username} has no public prompts.`))
+    return
+  }
+
+  console.log(`\n@${username}'s Public Prompts [${prompts.length}]\n`)
+
+  prompts.forEach((prompt, index) => {
+    console.log(chalk.bold(`${index + 1}. ${prompt.name}`))
+
+    if (prompt.description) {
+      console.log(chalk.gray(`   ${prompt.description}`))
+    } else {
+      console.log(chalk.gray(`   No description`))
+    }
+
+    console.log(chalk.gray(`   Version: v${prompt.current_version}`))
+    console.log(chalk.gray(`   Get: prompt-it get ${username}/${prompt.name}`))
+    console.log('')
+  })
 }
