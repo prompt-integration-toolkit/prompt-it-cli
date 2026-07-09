@@ -1,12 +1,5 @@
 import chalk from 'chalk'
-import {
-  text,
-  password,
-  confirm,
-  isCancel,
-  cancel,
-  outro
-} from '@clack/prompts'
+import { text, password, confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'
@@ -94,11 +87,10 @@ export function registerRegisterCommand(program: Command): void {
           return
         }
 
-        const { data: signUpData, error: signUpError } =
-          await supabase.auth.signUp({
-            email: String(email),
-            password: String(userPassword)
-          })
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: String(email),
+          password: String(userPassword)
+        })
 
         if (signUpError) {
           console.log(chalk.red(`Error: ${signUpError.message}`))
@@ -141,14 +133,9 @@ export function registerRegisterCommand(program: Command): void {
           return
         }
 
-        outro(
-          chalk.yellow(
-            'Account created. Please confirm your email before logging in.'
-          )
-        )
+        outro(chalk.yellow('Account created. Please confirm your email before logging in.'))
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
         console.log(chalk.red(`Error: ${message}`))
       }

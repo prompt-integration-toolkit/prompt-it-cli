@@ -14,10 +14,7 @@ import { registerListCommand } from './commands/list.js'
 
 const program = new Command()
 
-program
-  .name('prompt-it')
-  .description('Prompt-it CLI')
-  .version('0.1.0')
+program.name('prompt-it').description('Prompt-it CLI').version('0.1.0')
 
 registerInitCommand(program)
 registerRegisterCommand(program)

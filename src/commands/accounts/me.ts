@@ -27,8 +27,7 @@ export function registerMeCommand(program: Command): void {
 
         outro(chalk.green('You are logged in.'))
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
         console.log(chalk.red(`Error: ${message}`))
       }

@@ -25,12 +25,7 @@ type UserResult = {
 
 type PageAction = 'next' | 'previous' | 'exit'
 
-const promptSearchFields: PromptSearchField[] = [
-  'name',
-  'title',
-  'description',
-  'username'
-]
+const promptSearchFields: PromptSearchField[] = ['name', 'title', 'description', 'username']
 
 export function registerSearchCommand(program: Command): void {
   program
@@ -60,8 +55,7 @@ export function registerSearchCommand(program: Command): void {
 
         await searchPrompts(normalizedQuery)
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
         console.log(chalk.red(`Error: ${message}`))
       }
@@ -76,7 +70,7 @@ async function searchPrompts(query: string): Promise<void> {
 
   // Run SELECT + COUNT for all fields simultaneously — no more sequential COUNT queries
   const fieldResults = await Promise.all(
-    promptSearchFields.map(field =>
+    promptSearchFields.map((field) =>
       supabase
         .from('prompts')
         .select('username, name, title, description, current_version, tags', {
@@ -90,9 +84,7 @@ async function searchPrompts(query: string): Promise<void> {
     )
   )
 
-  const matchIndex = fieldResults.findIndex(
-    r => !r.error && r.count != null && r.count > 0
-  )
+  const matchIndex = fieldResults.findIndex((r) => !r.error && r.count != null && r.count > 0)
 
   if (matchIndex === -1) {
     s.stop(chalk.yellow(`No results found for "${query}".`))
@@ -185,9 +177,7 @@ function renderPromptResults(params: {
   console.log(chalk.cyan(`Search results for "${params.query}"`))
   console.log(chalk.gray(`Matched by: ${params.field}`))
   console.log(
-    chalk.gray(
-      `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
-    )
+    chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   console.log('')
 
@@ -305,15 +295,13 @@ async function renderUserResults(params: {
   console.log('')
   console.log(chalk.cyan(`Users found for "${params.query}"`))
   console.log(
-    chalk.gray(
-      `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
-    )
+    chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   console.log('')
 
   // Fetch all prompt counts for this page in parallel — no more sequential queries
   const promptCounts = await Promise.all(
-    params.results.map(user => countPublicPromptsByUserId(user.id))
+    params.results.map((user) => countPublicPromptsByUserId(user.id))
   )
 
   for (const [index, user] of params.results.entries()) {

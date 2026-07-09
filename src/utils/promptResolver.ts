@@ -47,10 +47,7 @@ export async function resolvePromptVersion(
     }
   }
 
-  const versionContent = await getPromptContentByVersion(
-    prompt.id,
-    requestedVersion
-  )
+  const versionContent = await getPromptContentByVersion(prompt.id, requestedVersion)
 
   return {
     ...prompt,
@@ -79,9 +76,7 @@ export async function getPromptContentByVersion(
     throw new Error('No version history found for this prompt.')
   }
 
-  const requestedVersionRecord = versions.find(
-    version => version.version === requestedVersion
-  )
+  const requestedVersionRecord = versions.find((version) => version.version === requestedVersion)
 
   if (!requestedVersionRecord) {
     throw new Error(`Version not found: ${requestedVersion}`)
@@ -95,12 +90,10 @@ export async function getPromptContentByVersion(
   }
 
   const sortedVersions = versions
-    .filter(version => compareSemver(version.version, requestedVersion) <= 0)
+    .filter((version) => compareSemver(version.version, requestedVersion) <= 0)
     .sort((a, b) => compareSemver(a.version, b.version))
 
-  const requestedIndex = sortedVersions.findIndex(
-    version => version.version === requestedVersion
-  )
+  const requestedIndex = sortedVersions.findIndex((version) => version.version === requestedVersion)
 
   if (requestedIndex === -1) {
     throw new Error(`Version not found: ${requestedVersion}`)

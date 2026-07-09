@@ -32,21 +32,15 @@ export function parsePromptRef(ref: string): PromptRef {
   const version = promptPart.slice(versionSeparatorIndex + 1)
 
   if (!promptName) {
-    throw new Error(
-      'Invalid prompt reference. Prompt name is required before @version.'
-    )
+    throw new Error('Invalid prompt reference. Prompt name is required before @version.')
   }
 
   if (!version) {
-    throw new Error(
-      'Invalid prompt reference. Version is required after @.'
-    )
+    throw new Error('Invalid prompt reference. Version is required after @.')
   }
 
   if (!isValidSemver(version)) {
-    throw new Error(
-      'Invalid version. Use semantic version format like 1.0.1.'
-    )
+    throw new Error('Invalid version. Use semantic version format like 1.0.1.')
   }
 
   return {

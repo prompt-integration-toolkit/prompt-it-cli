@@ -60,10 +60,7 @@ export function registerPublishCommand(program: Command): void {
     .option('--tags <tags>', 'Comma separated tags. Example: code,review,ai')
     .option('--message <message>', 'Update message.')
     .action(
-      async (
-        promptFileArg: string | undefined,
-        options: PublishOptions & { message?: string }
-      ) => {
+      async (promptFileArg: string | undefined, options: PublishOptions & { message?: string }) => {
         await handlePublishUpdate(promptFileArg, options)
       }
     )
@@ -107,9 +104,7 @@ async function handleInitialPublish(
     const title = options.title || details?.title
     const description = options.description || details?.description
     const version = details?.version || '1.0.0'
-    const tags = options.tags
-      ? normalizeTags(options.tags)
-      : normalizeTags(details?.tags)
+    const tags = options.tags ? normalizeTags(options.tags) : normalizeTags(details?.tags)
 
     if (!name || !title || !description) {
       console.log(chalk.red('Missing prompt details.'))
@@ -123,9 +118,7 @@ async function handleInitialPublish(
 
     if (!isValidPromptName(name)) {
       console.log(
-        chalk.red(
-          'Invalid prompt name. Use only letters, numbers, hyphen or underscore.'
-        )
+        chalk.red('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
       )
       return
     }
@@ -189,17 +182,15 @@ async function handleInitialPublish(
       return
     }
 
-    const { error: versionError } = await supabase
-      .from('prompt_versions')
-      .insert({
-        prompt_id: promptData.id,
-        version,
-        base_version: null,
-        change_type: 'snapshot',
-        diff: null,
-        snapshot_content: promptContent,
-        message: 'Initial publish'
-      })
+    const { error: versionError } = await supabase.from('prompt_versions').insert({
+      prompt_id: promptData.id,
+      version,
+      base_version: null,
+      change_type: 'snapshot',
+      diff: null,
+      snapshot_content: promptContent,
+      message: 'Initial publish'
+    })
 
     if (versionError) {
       console.log(chalk.red(`Version error: ${versionError.message}`))
@@ -208,8 +199,7 @@ async function handleInitialPublish(
 
     outro(chalk.green(`Prompt published successfully: ${profile.username}/${name}`))
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected error occurred.'
+    const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
     console.log(chalk.red(`Error: ${message}`))
   }
@@ -253,9 +243,7 @@ async function handlePublishUpdate(
     const title = options.title || details?.title
     const description = options.description || details?.description
     const newVersion = details?.version
-    const tags = options.tags
-      ? normalizeTags(options.tags)
-      : normalizeTags(details?.tags)
+    const tags = options.tags ? normalizeTags(options.tags) : normalizeTags(details?.tags)
 
     if (!name || !title || !description || !newVersion) {
       console.log(chalk.red('Missing prompt details.'))
@@ -269,9 +257,7 @@ async function handlePublishUpdate(
 
     if (!isValidPromptName(name)) {
       console.log(
-        chalk.red(
-          'Invalid prompt name. Use only letters, numbers, hyphen or underscore.'
-        )
+        chalk.red('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
       )
       return
     }
@@ -351,17 +337,15 @@ async function handlePublishUpdate(
       return
     }
 
-    const { error: versionError } = await supabase
-      .from('prompt_versions')
-      .insert({
-        prompt_id: existingPrompt.id,
-        version: newVersion,
-        base_version: existingPrompt.current_version,
-        change_type: changeType,
-        diff: generatedDiff,
-        snapshot_content: snapshotContent,
-        message: updateMessage
-      })
+    const { error: versionError } = await supabase.from('prompt_versions').insert({
+      prompt_id: existingPrompt.id,
+      version: newVersion,
+      base_version: existingPrompt.current_version,
+      change_type: changeType,
+      diff: generatedDiff,
+      snapshot_content: snapshotContent,
+      message: updateMessage
+    })
 
     if (versionError) {
       console.log(chalk.red(`Version error: ${versionError.message}`))
@@ -385,23 +369,15 @@ async function handlePublishUpdate(
       return
     }
 
-    outro(
-      chalk.green(
-        `Prompt updated successfully: ${profile.username}/${name} → ${newVersion}`
-      )
-    )
+    outro(chalk.green(`Prompt updated successfully: ${profile.username}/${name} → ${newVersion}`))
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected error occurred.'
+    const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
     console.log(chalk.red(`Error: ${message}`))
   }
 }
 
-async function findExistingPrompt(
-  username: string,
-  name: string
-): Promise<PromptRecord | null> {
+async function findExistingPrompt(username: string, name: string): Promise<PromptRecord | null> {
   const { data, error } = await supabase
     .from('prompts')
     .select(
@@ -452,10 +428,7 @@ function createPromptDiff(params: {
   )
 }
 
-function getChangeType(
-  currentVersion: string,
-  newVersion: string
-): 'snapshot' | 'diff' {
+function getChangeType(currentVersion: string, newVersion: string): 'snapshot' | 'diff' {
   const current = parseSemver(currentVersion)
   const next = parseSemver(newVersion)
 
@@ -464,9 +437,7 @@ function getChangeType(
   }
 
   const isPatchOnly =
-    current.major === next.major &&
-    current.minor === next.minor &&
-    next.patch > current.patch
+    current.major === next.major && current.minor === next.minor && next.patch > current.patch
 
   return isPatchOnly ? 'diff' : 'snapshot'
 }

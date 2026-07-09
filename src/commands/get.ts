@@ -17,11 +17,7 @@ type GetCommandOptions = {
 
 type PromptAction = 'copy' | 'file' | 'skill'
 
-import {
-  SupabasePrompt,
-  ResolvedPrompt,
-  resolvePromptVersion
-} from '../utils/promptResolver.js'
+import { SupabasePrompt, ResolvedPrompt, resolvePromptVersion } from '../utils/promptResolver.js'
 
 export function registerGetCommand(program: Command): void {
   program
@@ -31,63 +27,54 @@ export function registerGetCommand(program: Command): void {
     .argument('[action]', 'Optional action. Use "details" to create prompt-details.json.')
     .option('--copy', 'Copy prompt content directly to clipboard.')
     .option('--file', 'Create a markdown file with the prompt content.')
-    .action(
-      async (
-        promptRef: string,
-        action: string | undefined,
-        options: GetCommandOptions
-      ) => {
-        try {
-          const { user, promptName, version } = parsePromptRef(promptRef)
+    .action(async (promptRef: string, action: string | undefined, options: GetCommandOptions) => {
+      try {
+        const { user, promptName, version } = parsePromptRef(promptRef)
 
-          if (action && action !== 'details') {
-            console.log(chalk.red(`Unknown get action: ${action}`))
-            console.log(chalk.gray('Available action: details'))
-            return
-          }
-
-          const prompt = await getPromptFromSupabase(user, promptName)
-
-          if (!prompt) {
-            console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
-            return
-          }
-
-          const resolvedPrompt = await resolvePromptVersion(prompt, version)
-
-          if (options.copy && options.file) {
-            console.log(
-              chalk.red('Use only one option at a time: --copy or --file.')
-            )
-            return
-          }
-
-          if (action === 'details') {
-            await createPromptDetailsFile(resolvedPrompt)
-            return
-          }
-
-          if (options.copy) {
-            await copyPromptToClipboard(resolvedPrompt)
-            return
-          }
-
-          if (options.file) {
-            await createPromptFile(resolvedPrompt)
-            return
-          }
-
-          const isOwner = await checkIsPromptOwner(resolvedPrompt)
-
-          await showPromptAndAskAction(resolvedPrompt, isOwner)
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Unexpected error occurred.'
-
-          console.log(chalk.red(`Error: ${message}`))
+        if (action && action !== 'details') {
+          console.log(chalk.red(`Unknown get action: ${action}`))
+          console.log(chalk.gray('Available action: details'))
+          return
         }
+
+        const prompt = await getPromptFromSupabase(user, promptName)
+
+        if (!prompt) {
+          console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
+          return
+        }
+
+        const resolvedPrompt = await resolvePromptVersion(prompt, version)
+
+        if (options.copy && options.file) {
+          console.log(chalk.red('Use only one option at a time: --copy or --file.'))
+          return
+        }
+
+        if (action === 'details') {
+          await createPromptDetailsFile(resolvedPrompt)
+          return
+        }
+
+        if (options.copy) {
+          await copyPromptToClipboard(resolvedPrompt)
+          return
+        }
+
+        if (options.file) {
+          await createPromptFile(resolvedPrompt)
+          return
+        }
+
+        const isOwner = await checkIsPromptOwner(resolvedPrompt)
+
+        await showPromptAndAskAction(resolvedPrompt, isOwner)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
+
+        console.log(chalk.red(`Error: ${message}`))
       }
-    )
+    })
 }
 
 async function getPromptFromSupabase(
@@ -112,8 +99,6 @@ async function getPromptFromSupabase(
   return data
 }
 
-
-
 async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
   const session = await getSession()
 
@@ -124,10 +109,7 @@ async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
   return session.user.id === prompt.owner_id
 }
 
-async function showPromptAndAskAction(
-  prompt: ResolvedPrompt,
-  isOwner: boolean
-): Promise<void> {
+async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean): Promise<void> {
   console.log('')
   console.log(chalk.cyan(`# ${prompt.title || prompt.name}`))
   console.log(chalk.gray(`Author: ${prompt.username}`))
@@ -181,9 +163,7 @@ async function showPromptAndAskAction(
   }
 }
 
-async function askToCreatePromptDetailsFile(
-  prompt: ResolvedPrompt
-): Promise<void> {
+async function askToCreatePromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
   const shouldCreateDetails = await confirm({
     message: 'Get prompt-details.json?',
     initialValue: false
@@ -203,10 +183,9 @@ async function copyPromptToClipboard(prompt: ResolvedPrompt): Promise<void> {
 }
 
 async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
-  const fileName =
-    prompt.is_historical_version
-      ? `${prompt.name}@${prompt.resolved_version}.md`
-      : `${prompt.name}.md`
+  const fileName = prompt.is_historical_version
+    ? `${prompt.name}@${prompt.resolved_version}.md`
+    : `${prompt.name}.md`
 
   const filePath = path.join(process.cwd(), fileName)
 

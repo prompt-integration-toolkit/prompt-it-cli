@@ -52,8 +52,7 @@ export function registerInitCommand(program: Command): void {
 
         outro(chalk.green(`${PROMPT_DETAILS_FILE} created successfully.`))
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
         console.log(chalk.red(`Error: ${message}`))
       }

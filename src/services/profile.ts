@@ -7,9 +7,7 @@ export type UserProfile = {
   display_name: string
 }
 
-export async function getProfileFromSession(
-  session: PromptItSession
-): Promise<UserProfile> {
+export async function getProfileFromSession(session: PromptItSession): Promise<UserProfile> {
   await supabase.auth.setSession({
     access_token: session.access_token,
     refresh_token: session.refresh_token
@@ -26,9 +24,7 @@ export async function getProfileFromSession(
   }
 
   if (!data) {
-    throw new Error(
-      'User profile not found. Run prompt-it register again or create a profile.'
-    )
+    throw new Error('User profile not found. Run prompt-it register again or create a profile.')
   }
 
   return data

@@ -4,7 +4,7 @@ import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
-import { getProfileFromSession } from '../services/profile.js'
+import { getProfileFromSession, type UserProfile } from '../services/profile.js'
 import { getPromptContentByVersion } from '../utils/promptResolver.js'
 
 type PromptRecord = {
@@ -54,7 +54,7 @@ async function handleDelete(inputName: string): Promise<void> {
     const profile = await getProfileFromSession(session)
 
     const hasVersion = inputName.includes('@')
-    
+
     if (hasVersion) {
       const [promptName, targetVersion] = inputName.split('@')
       if (!promptName || !targetVersion) {
@@ -66,14 +66,13 @@ async function handleDelete(inputName: string): Promise<void> {
       await handleDeletePrompt(profile, inputName)
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected error occurred.'
+    const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
     console.log(chalk.red(`Error: ${message}`))
   }
 }
 
-async function handleDeleteVersion(profile: any, name: string, version: string): Promise<void> {
+async function handleDeleteVersion(profile: UserProfile, name: string, version: string): Promise<void> {
   const prompt = await findActivePrompt(profile.username, name)
 
   if (!prompt) {
@@ -96,9 +95,11 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
     return
   }
 
-  const sortedVersions = (versions as PromptVersionRecord[]).sort((a, b) => compareSemver(a.version, b.version))
+  const sortedVersions = (versions as PromptVersionRecord[]).sort((a, b) =>
+    compareSemver(a.version, b.version)
+  )
 
-  const targetIndex = sortedVersions.findIndex(v => v.version === version)
+  const targetIndex = sortedVersions.findIndex((v) => v.version === version)
   if (targetIndex === -1) {
     console.log(chalk.red(`Version ${version} not found in prompt ${name}.`))
     return
@@ -114,7 +115,7 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
     versionsToDelete.push(v)
   }
 
-  const deletingCurrent = versionsToDelete.some(v => v.version === prompt.current_version)
+  const deletingCurrent = versionsToDelete.some((v) => v.version === prompt.current_version)
 
   let newCurrentVersion: string | null = null
   let newCurrentContent: string | null = null
@@ -122,7 +123,11 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
   if (deletingCurrent) {
     if (targetIndex === 0) {
       console.log('')
-      console.log(chalk.yellow(`Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`))
+      console.log(
+        chalk.yellow(
+          `Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`
+        )
+      )
       console.log(chalk.red('Please delete the entire prompt instead.'))
       return
     }
@@ -136,11 +141,11 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
   console.log(`${chalk.bold('Prompt:')}               ${profile.username}/${name}`)
   console.log(`${chalk.bold('Target version:')}       ${version}`)
   console.log(`${chalk.bold('Dependent versions:')}`)
-  versionsToDelete.forEach(v => {
+  versionsToDelete.forEach((v) => {
     const isTarget = v.version === version
     console.log(`  - ${v.version} (${v.change_type})${isTarget ? chalk.gray(' [target]') : ''}`)
   })
-  
+
   if (newCurrentVersion) {
     console.log(`${chalk.bold('New current version:')}  ${chalk.green(newCurrentVersion)}`)
   }
@@ -161,8 +166,8 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
     return
   }
 
-  const idsToDelete = versionsToDelete.map(v => v.id)
-  
+  const idsToDelete = versionsToDelete.map((v) => v.id)
+
   const { data: deletedRows, error: delError } = await supabase
     .from('prompt_versions')
     .delete()
@@ -175,32 +180,44 @@ async function handleDeleteVersion(profile: any, name: string, version: string):
   }
 
   if (!deletedRows || deletedRows.length === 0) {
-    console.log(chalk.red(`Error: No versions were deleted. This usually means Supabase Row Level Security (RLS) is blocking the DELETE operation on 'prompt_versions'. Please check your Supabase policies.`))
+    console.log(
+      chalk.red(
+        `Error: No versions were deleted. This usually means Supabase Row Level Security (RLS) is blocking the DELETE operation on 'prompt_versions'. Please check your Supabase policies.`
+      )
+    )
     return
   }
 
   if (deletedRows.length !== idsToDelete.length) {
-    console.log(chalk.yellow(`Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`))
+    console.log(
+      chalk.yellow(
+        `Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`
+      )
+    )
   }
 
   if (newCurrentVersion && newCurrentContent) {
     const { error: updateError } = await supabase
       .from('prompts')
-      .update({ 
+      .update({
         current_version: newCurrentVersion,
-        current_content: newCurrentContent 
+        current_content: newCurrentContent
       })
       .eq('id', prompt.id)
 
     if (updateError) {
-      console.log(chalk.red(`Warning: Versions deleted, but could not update current_version: ${updateError.message}`))
+      console.log(
+        chalk.red(
+          `Warning: Versions deleted, but could not update current_version: ${updateError.message}`
+        )
+      )
     }
   }
 
   outro(chalk.green(`Deleted ${versionsToDelete.length} version(s) successfully.`))
 }
 
-async function handleDeletePrompt(profile: any, name: string): Promise<void> {
+async function handleDeletePrompt(profile: UserProfile, name: string): Promise<void> {
   const prompt = await findActivePrompt(profile.username, name)
 
   if (!prompt) {
@@ -267,10 +284,7 @@ async function handleDeletePrompt(profile: any, name: string): Promise<void> {
   )
 }
 
-async function findActivePrompt(
-  username: string,
-  name: string
-): Promise<PromptRecord | null> {
+async function findActivePrompt(username: string, name: string): Promise<PromptRecord | null> {
   const { data, error } = await supabase
     .from('prompts')
     .select('id, owner_id, name, current_version')

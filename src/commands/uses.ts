@@ -52,8 +52,7 @@ async function handleUses(): Promise<void> {
       console.log(chalk.yellow(`Warning: only ${remaining} post(s) remaining.`))
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unexpected error occurred.'
+    const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
     console.log(chalk.red(`Error: ${message}`))
   }
