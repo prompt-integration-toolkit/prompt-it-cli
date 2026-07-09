@@ -1,7 +1,6 @@
 # Prompt-It CLI
 
-<img src="https://img.shields.io/badge/Prompt--it-CLI-black?style=for-the-badge&logo=npm" width="200">
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+<img src="https://img.shields.io/badge/Prompt--it-CLI-black?style=for-the-badge&logo=npm" width="200"> <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Contributor Covenant"></a>
 
 <p align="center">
     <img src=".github/Prompt it cli.png" width="150">
