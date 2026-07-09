@@ -26,3 +26,5 @@ npm install -g prompt-it
 **CLI** - [Here](https://github.com/Prompt-It-org/prompt-it-cli/blob/main/docs/DOCS.md)
 
 **Code of Conduct** - [Here](CODE_OF_CONDUCT.md)
+
+**Contributing Guide** - [Here](CONTRIBUTING.md)
