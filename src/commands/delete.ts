@@ -89,6 +89,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
     .from('prompt_versions')
     .select('id, version, change_type, prompt_id')
     .eq('prompt_id', prompt.id)
+    .is('deleted_at', null)
 
   if (error) {
     console.log(chalk.red(`Could not fetch versions: ${error.message}`))
@@ -168,9 +169,11 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
 
   const idsToDelete = versionsToDelete.map((v) => v.id)
 
+  const exactTimestamp = new Date().toISOString()
+
   const { data: deletedRows, error: delError } = await supabase
     .from('prompt_versions')
-    .delete()
+    .update({ deleted_at: exactTimestamp })
     .in('id', idsToDelete)
     .select('id')
 
@@ -214,7 +217,16 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
     }
   }
 
-  outro(chalk.green(`Deleted ${versionsToDelete.length} version(s) successfully.`))
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 7)
+  const expiresAtFormatted = expiresAt.toISOString().split('T')[0]
+
+  outro(
+    chalk.green(
+      `Deleted ${versionsToDelete.length} version(s) successfully (Soft Delete).\n` +
+        chalk.gray(`  They will be permanently deleted after 7 days (${expiresAtFormatted}).`)
+    )
+  )
 }
 
 async function handleDeletePrompt(profile: UserProfile, name: string): Promise<void> {
@@ -233,7 +245,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   const versionCount = await countPromptVersions(prompt.id)
 
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 7)
+  expiresAt.setDate(expiresAt.getDate() + 1)
   const expiresAtFormatted = expiresAt.toISOString().split('T')[0]
 
   console.log('')
@@ -244,7 +256,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   console.log(`${chalk.bold('Versions:')}        ${versionCount}`)
   console.log('')
   console.log(chalk.gray('This prompt will no longer appear in search or get.'))
-  console.log(chalk.gray(`It will be permanently deleted after 7 days (${expiresAtFormatted}).`))
+  console.log(chalk.gray(`It will be permanently deleted after 1 day (${expiresAtFormatted}).`))
   console.log(chalk.gray('This action will not reset your post limit usage.'))
   console.log('')
 
@@ -305,6 +317,7 @@ async function countPromptVersions(promptId: string): Promise<number> {
     .from('prompt_versions')
     .select('id', { count: 'exact', head: true })
     .eq('prompt_id', promptId)
+    .is('deleted_at', null)
 
   if (error) {
     throw new Error(`Could not count versions: ${error.message}`)
