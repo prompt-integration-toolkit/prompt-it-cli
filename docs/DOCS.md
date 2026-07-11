@@ -65,7 +65,10 @@ These commands allow you to initialize new prompt projects, publish them, and ke
     * `--message <message>`: A commit message briefly indicating what changed in this new version.
 
 * `prompt-it delete`
-  Permanently deletes a prompt you own. You also have the flexibility to delete a specific version from the prompt's history using the `@version` format (e.g., `prompt-it delete my-prompt@1.0.1`).
+  Soft deletes a prompt you own. It will be permanently deleted after 1 day (for an entire prompt and all its versions) or 7 days (for specific versions). You have the flexibility to delete a specific version from the prompt's history using the `@version` format (e.g., `prompt-it delete my-prompt@1.0.1`).
+
+* `prompt-it revoke`
+  Recovers a prompt or a specific version that is currently in the soft delete state. Like the delete command, you can specify an entire prompt or a specific version to recover using the `@version` format.
 
 * `prompt-it list`
   A versatile command to inspect prompts. Its behavior changes depending on the argument provided:

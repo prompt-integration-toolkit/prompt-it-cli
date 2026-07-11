@@ -33,9 +33,15 @@
     },
     "delete": {
       "promptNotFound": "Prompt not found: {{user}}/{{name}}",
-      "confirmPrompt": "Are you sure you want to delete the prompt \"{{name}}\" and ALL its versions? This cannot be undone.",
+      "confirmPrompt": "Are you sure you want to delete the prompt \"{{name}}\" and ALL its versions?",
       "successMessage": "Prompt deleted successfully.",
       "versionSuccessMessage": "Deleted {{count}} version(s) successfully."
+    },
+    "revoke": {
+      "promptNotFound": "Deleted prompt not found: {{user}}/{{name}}",
+      "confirmPrompt": "Are you sure you want to revoke the deletion of \"{{name}}\"?",
+      "successMessage": "Prompt restored successfully:",
+      "versionSuccessMessage": "Versions restored successfully!"
     }
   },
   "services": {
