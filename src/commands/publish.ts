@@ -11,6 +11,7 @@ import { getSession } from '../services/session.js'
 import { getProfileFromSession } from '../services/profile.js'
 import { readPromptDetails, normalizeTags } from '../utils/promptDetails.js'
 import { assertWithinPostLimit } from '../services/limits.js'
+import { moderateContent } from '../services/moderation.js'
 import { isValidSemver, isVersionGreater, getChangeType } from '../utils/semver.js'
 import { isValidPromptName } from '../utils/validators.js'
 
@@ -125,6 +126,21 @@ async function handleInitialPublish(
     }
 
     const promptContent = await readPromptFile(promptFile)
+
+    try {
+      await moderateContent(promptContent)
+    } catch (modError: any) {
+      if (modError.message === 'NO_API_KEY' || modError.message === 'API_ERROR') {
+        console.log(chalk.red('\nCurrently, it\'s not possible to publish or update because the moderation service is unavailable. Please wait a moment and try again.'))
+        return
+      }
+      if (modError.message.startsWith('MODERATION_FAILED:')) {
+        const categories = modError.message.split(':')[1]
+        console.log(chalk.red(`\nContent blocked for violating safety policies. Identified categories: [${categories}]`))
+        return
+      }
+      throw modError
+    }
 
     const existingPrompt = await findExistingPrompt(profile.username, name)
 
@@ -288,6 +304,21 @@ async function handlePublishUpdate(
     await assertWithinPostLimit(profile.id)
 
     const newContent = await readPromptFile(promptFile)
+
+    try {
+      await moderateContent(newContent)
+    } catch (modError: any) {
+      if (modError.message === 'NO_API_KEY' || modError.message === 'API_ERROR') {
+        console.log(chalk.red('\nCurrently, it\'s not possible to publish or update because the moderation service is unavailable. Please wait a moment and try again.'))
+        return
+      }
+      if (modError.message.startsWith('MODERATION_FAILED:')) {
+        const categories = modError.message.split(':')[1]
+        console.log(chalk.red(`\nContent blocked for violating safety policies. Identified categories: [${categories}]`))
+        return
+      }
+      throw modError
+    }
 
     if (newContent === existingPrompt.current_content) {
       console.log(chalk.yellow('No content changes detected.'))
