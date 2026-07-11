@@ -121,6 +121,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     .from('prompt_versions')
     .select('version, created_at')
     .eq('prompt_id', prompt.id)
+    .is('deleted_at', null)
 
   if (versionsError) {
     throw new Error(`Could not fetch prompt versions: ${versionsError.message}`)
@@ -182,6 +183,7 @@ async function showVersionDiff(
     .from('prompt_versions')
     .select('version')
     .eq('prompt_id', prompt.id)
+    .is('deleted_at', null)
 
   if (versionsError) {
     throw new Error(`Could not fetch prompt versions: ${versionsError.message}`)
