@@ -233,7 +233,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   const versionCount = await countPromptVersions(prompt.id)
 
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 7)
+  expiresAt.setDate(expiresAt.getDate() + 1)
   const expiresAtFormatted = expiresAt.toISOString().split('T')[0]
 
   console.log('')
@@ -244,7 +244,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   console.log(`${chalk.bold('Versions:')}        ${versionCount}`)
   console.log('')
   console.log(chalk.gray('This prompt will no longer appear in search or get.'))
-  console.log(chalk.gray(`It will be permanently deleted after 7 days (${expiresAtFormatted}).`))
+  console.log(chalk.gray(`It will be permanently deleted after 1 day (${expiresAtFormatted}).`))
   console.log(chalk.gray('This action will not reset your post limit usage.'))
   console.log('')
 

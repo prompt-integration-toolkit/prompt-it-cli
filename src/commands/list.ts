@@ -69,6 +69,7 @@ async function listAllPrompts(userId: string): Promise<void> {
     .from('prompts')
     .select('name, current_version, description')
     .eq('owner_id', userId)
+    .eq('status', 'active')
     .order('name')
 
   if (error) {
@@ -104,6 +105,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     .select('id, description, created_at')
     .eq('owner_id', userId)
     .eq('name', promptName)
+    .eq('status', 'active')
     .maybeSingle()
 
   if (promptError) {
@@ -164,6 +166,7 @@ async function showVersionDiff(
     .select('id')
     .eq('owner_id', userId)
     .eq('name', promptName)
+    .eq('status', 'active')
     .maybeSingle()
 
   if (promptError) {
