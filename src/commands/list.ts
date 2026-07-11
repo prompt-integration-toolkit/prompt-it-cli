@@ -69,6 +69,7 @@ async function listAllPrompts(userId: string): Promise<void> {
     .from('prompts')
     .select('name, current_version, description')
     .eq('owner_id', userId)
+    .eq('status', 'active')
     .order('name')
 
   if (error) {
@@ -104,6 +105,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     .select('id, description, created_at')
     .eq('owner_id', userId)
     .eq('name', promptName)
+    .eq('status', 'active')
     .maybeSingle()
 
   if (promptError) {
@@ -119,6 +121,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     .from('prompt_versions')
     .select('version, created_at')
     .eq('prompt_id', prompt.id)
+    .is('deleted_at', null)
 
   if (versionsError) {
     throw new Error(`Could not fetch prompt versions: ${versionsError.message}`)
@@ -164,6 +167,7 @@ async function showVersionDiff(
     .select('id')
     .eq('owner_id', userId)
     .eq('name', promptName)
+    .eq('status', 'active')
     .maybeSingle()
 
   if (promptError) {
@@ -179,6 +183,7 @@ async function showVersionDiff(
     .from('prompt_versions')
     .select('version')
     .eq('prompt_id', prompt.id)
+    .is('deleted_at', null)
 
   if (versionsError) {
     throw new Error(`Could not fetch prompt versions: ${versionsError.message}`)
