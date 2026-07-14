@@ -15,4 +15,5 @@ export interface AgentAdapter {
   install(prompt: Prompt, options?: InstallOptions): Promise<void>;
   uninstall(promptName: string, options?: InstallOptions): Promise<void>;
   isInstalled(promptName: string, options?: InstallOptions): Promise<boolean>;
+  listInstalled(): Promise<string[]>;
 }

@@ -43,4 +43,26 @@ export class ClaudeAdapter implements AgentAdapter {
     const dir = this.getSkillDir(promptName);
     await fs.promises.rm(dir, { recursive: true, force: true });
   }
+
+  async listInstalled(): Promise<string[]> {
+    const skillsDir = path.join(getHomeDir(), '.claude', 'skills');
+    try {
+      const entries = await fs.promises.readdir(skillsDir, { withFileTypes: true });
+      const prompts: string[] = [];
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const skillFile = path.join(skillsDir, entry.name, 'SKILL.md');
+          try {
+            await fs.promises.access(skillFile);
+            prompts.push(entry.name);
+          } catch {
+            // skip directories without SKILL.md
+          }
+        }
+      }
+      return prompts;
+    } catch {
+      return [];
+    }
+  }
 }

@@ -56,4 +56,26 @@ export class AntigravityAdapter implements AgentAdapter {
     const dir = this.getKIDir(promptName);
     await fs.promises.rm(dir, { recursive: true, force: true });
   }
+
+  async listInstalled(): Promise<string[]> {
+    const knowledgeDir = path.join(getHomeDir(), '.gemini', 'antigravity', 'knowledge');
+    try {
+      const entries = await fs.promises.readdir(knowledgeDir, { withFileTypes: true });
+      const prompts: string[] = [];
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const metadataFile = path.join(knowledgeDir, entry.name, 'metadata.json');
+          try {
+            await fs.promises.access(metadataFile);
+            prompts.push(entry.name);
+          } catch {
+            // skip directories without metadata.json
+          }
+        }
+      }
+      return prompts;
+    } catch {
+      return [];
+    }
+  }
 }

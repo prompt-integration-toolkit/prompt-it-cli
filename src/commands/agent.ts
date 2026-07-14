@@ -184,4 +184,153 @@ export function registerAgentCommand(program: Command): void {
         console.log(chalk.red(`Error: ${message}`))
       }
     })
+
+  agent
+    .command('list')
+    .description('List installed prompts on AI agents.')
+    .argument('[promptName]', 'Optional. Search for a specific prompt across agents.')
+    .option('--claude', 'Filter by Claude Code.')
+    .option('--codex', 'Filter by Codex.')
+    .option('--antigravity', 'Filter by Antigravity IDE.')
+    .action(async (promptName: string | undefined, options: AgentAddOptions) => {
+      try {
+        const adapters = resolveAdapters(options)
+
+        if (promptName) {
+          await searchPromptAcrossAgents(promptName, adapters)
+        } else {
+          await listAllInstalledPrompts(adapters, options)
+        }
+      } catch (error) {
+        if (isPermissionError(error)) {
+          console.log(
+            chalk.red(
+              '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
+            )
+          )
+          return
+        }
+
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
+        console.log(chalk.red(`Error: ${message}`))
+      }
+    })
+}
+
+function resolveAdapters(options: AgentAddOptions): import('../agent/types/index.js').AgentAdapter[] {
+  const allSelected = options.claude && options.codex && options.antigravity
+  const noneSelected = !options.claude && !options.codex && !options.antigravity
+
+  if (allSelected || noneSelected) {
+    return AgentManager.getAllAdapters()
+  }
+
+  const adapters: import('../agent/types/index.js').AgentAdapter[] = []
+
+  if (options.claude) adapters.push(AgentManager.getAdapter('claude'))
+  if (options.codex) adapters.push(AgentManager.getAdapter('codex'))
+  if (options.antigravity) adapters.push(AgentManager.getAdapter('antigravity'))
+
+  return adapters
+}
+
+function formatAgentHeader(
+  options: AgentAddOptions
+): string {
+  const allSelected = options.claude && options.codex && options.antigravity
+  const noneSelected = !options.claude && !options.codex && !options.antigravity
+
+  if (allSelected || noneSelected) {
+    return 'Installed prompts:'
+  }
+
+  const names: string[] = []
+  if (options.claude) names.push('Claude Code')
+  if (options.codex) names.push('Codex')
+  if (options.antigravity) names.push('Antigravity IDE')
+
+  if (names.length === 1) {
+    return `Installed prompts (${names[0]}):`
+  }
+
+  const last = names.pop()
+  return `Installed prompts (${names.join(', ')} and ${last}):`
+}
+
+async function listAllInstalledPrompts(
+  adapters: import('../agent/types/index.js').AgentAdapter[],
+  options: AgentAddOptions
+): Promise<void> {
+  const results: { displayName: string; prompts: string[] }[] = []
+
+  for (const adapter of adapters) {
+    const prompts = await adapter.listInstalled()
+    results.push({ displayName: adapter.displayName, prompts })
+  }
+
+  const hasAny = results.some((r) => r.prompts.length > 0)
+
+  if (!hasAny) {
+    const allSelected = options.claude && options.codex && options.antigravity
+    const noneSelected = !options.claude && !options.codex && !options.antigravity
+
+    if (allSelected || noneSelected) {
+      console.log(chalk.yellow('No prompts installed on any agent.'))
+    } else {
+      const emptyNames = results.map((r) => r.displayName)
+      const label = emptyNames.length === 1
+        ? emptyNames[0]
+        : `${emptyNames.slice(0, -1).join(', ')} and ${emptyNames[emptyNames.length - 1]}`
+      console.log(chalk.yellow(`No prompts installed on ${label}.`))
+    }
+    return
+  }
+
+  console.log('')
+  console.log(chalk.white(formatAgentHeader(options)))
+  console.log('')
+
+  for (const result of results) {
+    if (result.prompts.length > 0) {
+      console.log(chalk.cyan(result.displayName))
+      for (const prompt of result.prompts) {
+        console.log(`  • ${prompt}`)
+      }
+      console.log('')
+    } else {
+      const allSelected = options.claude && options.codex && options.antigravity
+      const noneSelected = !options.claude && !options.codex && !options.antigravity
+
+      if (!allSelected && !noneSelected) {
+        console.log(chalk.yellow(`No prompts installed on ${result.displayName}.`))
+        console.log('')
+      }
+    }
+  }
+}
+
+async function searchPromptAcrossAgents(
+  promptName: string,
+  adapters: import('../agent/types/index.js').AgentAdapter[]
+): Promise<void> {
+  const foundOn: string[] = []
+
+  for (const adapter of adapters) {
+    const installed = await adapter.isInstalled(promptName)
+    if (installed) {
+      foundOn.push(adapter.displayName)
+    }
+  }
+
+  if (foundOn.length === 0) {
+    console.log(chalk.yellow(`Prompt "${promptName}" is not installed on any agent.`))
+    return
+  }
+
+  console.log('')
+  console.log(chalk.white(`Prompt "${promptName}" is installed on:`))
+  for (const name of foundOn) {
+    console.log(`  • ${name}`)
+  }
+  console.log('')
 }

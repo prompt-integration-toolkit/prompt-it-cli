@@ -16,4 +16,12 @@ export class AgentManager {
         throw new Error(`Unsupported agent: ${agentName}`);
     }
   }
+
+  static getAllAdapters(): AgentAdapter[] {
+    return [
+      new ClaudeAdapter(),
+      new CodexAdapter(),
+      new AntigravityAdapter()
+    ];
+  }
 }
