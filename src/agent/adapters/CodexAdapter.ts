@@ -5,6 +5,7 @@ import { getHomeDir } from '../utils/osPaths.js';
 
 export class CodexAdapter implements AgentAdapter {
   readonly name = 'codex';
+  readonly displayName = 'Codex';
 
   private getSkillDir(promptName: string): string {
     return path.join(getHomeDir(), '.codex', 'skills', promptName);

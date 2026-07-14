@@ -102,7 +102,7 @@ export function registerAgentCommand(program: Command): void {
         if (alreadyInstalled && !options.force) {
           console.log(
             chalk.yellow(
-              `Prompt "${resolved.name}" is already installed on ${adapter.name}. Use --force to overwrite.`
+              `Prompt "${resolved.name}" is already installed on ${adapter.displayName}. Use --force to overwrite.`
             )
           )
           return
@@ -116,7 +116,7 @@ export function registerAgentCommand(program: Command): void {
         })
 
         console.log(
-          chalk.green(`✔ Prompt "${resolved.name}" successfully installed on ${adapter.name}.`)
+          chalk.green(`✔ Prompt "${resolved.name}" successfully installed on ${adapter.displayName}.`)
         )
       } catch (error) {
         if (isPermissionError(error)) {
@@ -160,7 +160,7 @@ export function registerAgentCommand(program: Command): void {
 
         if (!installed) {
           console.log(
-            chalk.yellow(`Prompt "${promptName}" was not found on ${adapter.name}.`)
+            chalk.yellow(`Prompt "${promptName}" was not found on ${adapter.displayName}.`)
           )
           return
         }
@@ -168,7 +168,7 @@ export function registerAgentCommand(program: Command): void {
         await adapter.uninstall(promptName)
 
         console.log(
-          chalk.green(`✔ Prompt "${promptName}" successfully removed from ${adapter.name}.`)
+          chalk.green(`✔ Prompt "${promptName}" successfully removed from ${adapter.displayName}.`)
         )
       } catch (error) {
         if (isPermissionError(error)) {

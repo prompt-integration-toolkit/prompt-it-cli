@@ -11,6 +11,7 @@ export interface InstallOptions {
 
 export interface AgentAdapter {
   readonly name: string;
+  readonly displayName: string;
   install(prompt: Prompt, options?: InstallOptions): Promise<void>;
   uninstall(promptName: string, options?: InstallOptions): Promise<void>;
   isInstalled(promptName: string, options?: InstallOptions): Promise<boolean>;

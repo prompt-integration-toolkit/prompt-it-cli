@@ -5,6 +5,7 @@ import { getHomeDir } from '../utils/osPaths.js';
 
 export class AntigravityAdapter implements AgentAdapter {
   readonly name = 'antigravity';
+  readonly displayName = 'Antigravity IDE';
 
   private getKIDir(promptName: string): string {
     return path.join(getHomeDir(), '.gemini', 'antigravity', 'knowledge', promptName);
@@ -42,7 +43,7 @@ export class AntigravityAdapter implements AgentAdapter {
     // Write metadata.json
     const metadata = {
       title: prompt.name,
-      Summary: prompt.description || prompt.name
+      summary: prompt.description || prompt.name
     };
     await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
 

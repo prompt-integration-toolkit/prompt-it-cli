@@ -5,6 +5,7 @@ import { getHomeDir } from '../utils/osPaths.js';
 
 export class ClaudeAdapter implements AgentAdapter {
   readonly name = 'claude';
+  readonly displayName = 'Claude Code';
 
   private getSkillDir(promptName: string): string {
     return path.join(getHomeDir(), '.claude', 'skills', promptName);
