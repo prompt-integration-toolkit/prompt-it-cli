@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { AgentAdapter, InstallOptions, Prompt } from '../types/index.js';
-import { getHomeDir } from '../utils/osPaths.js';
+import { getHomeDir, PROMPT_IT_SIGNATURE } from '../utils/osPaths.js';
 
 export class AntigravityAdapter implements AgentAdapter {
   readonly name = 'antigravity';
@@ -23,17 +23,20 @@ export class AntigravityAdapter implements AgentAdapter {
     return path.join(this.getArtifactsDir(promptName), `${promptName}.md`);
   }
 
-  async isInstalled(promptName: string, options?: InstallOptions): Promise<boolean> {
+  private async hasSignature(promptName: string): Promise<boolean> {
     try {
-      await fs.promises.access(this.getMetadataFilePath(promptName));
-      return true;
+      const content = await fs.promises.readFile(this.getPromptFilePath(promptName), 'utf-8');
+      return content.includes(PROMPT_IT_SIGNATURE);
     } catch {
       return false;
     }
   }
 
+  async isInstalled(promptName: string, options?: InstallOptions): Promise<boolean> {
+    return this.hasSignature(promptName);
+  }
+
   async install(prompt: Prompt, options?: InstallOptions): Promise<void> {
-    const dir = this.getKIDir(prompt.name);
     const artifactsDir = this.getArtifactsDir(prompt.name);
     const metadataPath = this.getMetadataFilePath(prompt.name);
     const promptPath = this.getPromptFilePath(prompt.name);
@@ -48,7 +51,7 @@ export class AntigravityAdapter implements AgentAdapter {
     await fs.promises.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
 
     // Write prompt content to artifacts
-    let content = `${prompt.content}\n\n<!-- Managed by Prompt-It -->\n`;
+    const content = `${prompt.content}\n\n${PROMPT_IT_SIGNATURE}\n`;
     await fs.promises.writeFile(promptPath, content, 'utf-8');
   }
 
@@ -64,12 +67,8 @@ export class AntigravityAdapter implements AgentAdapter {
       const prompts: string[] = [];
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          const metadataFile = path.join(knowledgeDir, entry.name, 'metadata.json');
-          try {
-            await fs.promises.access(metadataFile);
+          if (await this.hasSignature(entry.name)) {
             prompts.push(entry.name);
-          } catch {
-            // skip directories without metadata.json
           }
         }
       }

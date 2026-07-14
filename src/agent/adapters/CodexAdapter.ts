@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { AgentAdapter, InstallOptions, Prompt } from '../types/index.js';
-import { getHomeDir } from '../utils/osPaths.js';
+import { getHomeDir, PROMPT_IT_SIGNATURE } from '../utils/osPaths.js';
 
 export class CodexAdapter implements AgentAdapter {
   readonly name = 'codex';
@@ -15,13 +15,17 @@ export class CodexAdapter implements AgentAdapter {
     return path.join(this.getSkillDir(promptName), 'SKILL.md');
   }
 
-  async isInstalled(promptName: string, options?: InstallOptions): Promise<boolean> {
+  private async hasSignature(filePath: string): Promise<boolean> {
     try {
-      await fs.promises.access(this.getSkillFilePath(promptName));
-      return true;
+      const content = await fs.promises.readFile(filePath, 'utf-8');
+      return content.includes(PROMPT_IT_SIGNATURE);
     } catch {
       return false;
     }
+  }
+
+  async isInstalled(promptName: string, options?: InstallOptions): Promise<boolean> {
+    return this.hasSignature(this.getSkillFilePath(promptName));
   }
 
   async install(prompt: Prompt, options?: InstallOptions): Promise<void> {
@@ -34,7 +38,7 @@ export class CodexAdapter implements AgentAdapter {
     if (prompt.description) {
       content += `# ${prompt.description}\n\n`;
     }
-    content += `${prompt.content}\n\n<!-- Managed by Prompt-It -->\n`;
+    content += `${prompt.content}\n\n${PROMPT_IT_SIGNATURE}\n`;
 
     await fs.promises.writeFile(filePath, content, 'utf-8');
   }
@@ -52,11 +56,8 @@ export class CodexAdapter implements AgentAdapter {
       for (const entry of entries) {
         if (entry.isDirectory()) {
           const skillFile = path.join(skillsDir, entry.name, 'SKILL.md');
-          try {
-            await fs.promises.access(skillFile);
+          if (await this.hasSignature(skillFile)) {
             prompts.push(entry.name);
-          } catch {
-            // skip directories without SKILL.md
           }
         }
       }
