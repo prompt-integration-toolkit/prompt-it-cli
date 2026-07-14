@@ -20,7 +20,7 @@ prompt-it help
 
 ## ![Available Commands](https://img.shields.io/badge/Available_Commands-8b5cf6?style=for-the-badge)
 
-The CLI is divided into three main usage categories: **Authentication**, **Prompt Management**, and **Search/Consumption**.
+The CLI is divided into four main usage categories: **Authentication**, **Prompt Management**, **Search/Consumption**, and **Agent Integration**.
 
 ### ![Accounts & Authentication](https://img.shields.io/badge/1.-Accounts_%26_Authentication-ec4899?style=flat-square)
 
@@ -95,6 +95,37 @@ Tools for exploring public content created by the community and integrating them
   * **Options**:
     * `--copy`: Copies the prompt's text content directly to your system's clipboard.
     * `--file`: Saves the entire prompt content inside a local Markdown (`.md`) file.
+
+---
+
+### ![Agent Integration](https://img.shields.io/badge/4.-Agent_Integration-10b981?style=flat-square)
+
+Commands to directly install, manage, and remove prompts from supported AI agent environments (Claude Code, Codex, and Antigravity IDE).
+
+* `prompt-it agent add`
+  Installs a public prompt directly into an AI agent's configuration directory, making it globally available to that agent as a skill or knowledge item.
+  * **Parameters**:
+    * `<promptRef>`: The prompt reference to install (`username/prompt-name` or `username/prompt-name@version`).
+  * **Options**:
+    * `--claude`: Install on Claude Code.
+    * `--codex`: Install on Codex.
+    * `--antigravity`: Install on Antigravity IDE.
+    * `--force`: Overwrite the prompt if it is already installed.
+
+* `prompt-it agent list`
+  Lists all Prompt-It managed prompts currently installed on your AI agents.
+  * **Parameters**:
+    * `[promptName]` *(Optional)*: Search for a specific prompt to see which agents have it installed.
+  * **Options**:
+    * You can use agent flags (`--claude`, `--codex`, `--antigravity`) to filter the list to specific agents. If no flags are provided, it lists prompts across all agents.
+
+* `prompt-it agent remove`
+  Removes installed prompts from your AI agents.
+  * **Parameters**:
+    * `[promptName]` *(Optional)*: Name of the prompt to remove. Required unless the `--all` flag is used.
+  * **Options**:
+    * `--all`: Removes ALL Prompt-It managed prompts from the specified agents.
+    * Use agent flags (`--claude`, `--codex`, `--antigravity`) to specify which agents to remove from. If no agent flags are provided when removing a specific prompt, it will be removed from ALL agents where it is installed.
 
 ---
 
