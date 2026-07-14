@@ -1,4 +1,5 @@
 import chalk from 'chalk'
+import { confirm, isCancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -13,6 +14,10 @@ type AgentAddOptions = {
   codex?: boolean
   antigravity?: boolean
   force?: boolean
+}
+
+type AgentRemoveOptions = Omit<AgentAddOptions, 'force'> & {
+  all?: boolean
 }
 
 function resolveAgentName(options: AgentAddOptions): string | null {
@@ -135,41 +140,84 @@ export function registerAgentCommand(program: Command): void {
 
   agent
     .command('remove')
-    .description('Remove a prompt from an AI agent.')
-    .argument('<promptName>', 'Name of the prompt to remove. Example: pro-code-reviewer')
+    .description('Remove prompts from AI agents.')
+    .argument('[promptName]', 'Name of the prompt to remove. Optional if --all is used.')
+    .option('--all', 'Remove all managed prompts from the specified agents.')
     .option('--claude', 'Remove from Claude Code.')
     .option('--codex', 'Remove from Codex.')
     .option('--antigravity', 'Remove from Antigravity IDE.')
-    .action(async (promptName: string, options: AgentAddOptions) => {
+    .action(async (promptName: string | undefined, options: AgentRemoveOptions) => {
       try {
-        const agentName = resolveAgentName(options)
-
-        if (!agentName) {
-          console.log(chalk.red('You must specify an agent: --claude, --codex, or --antigravity.'))
+        if (promptName && options.all) {
+          console.log(chalk.red('✖ Cannot specify both a prompt name and the --all flag.'))
           return
         }
 
-        if (agentName === 'multiple') {
-          console.log(chalk.red('Please specify only one agent at a time.'))
+        if (!promptName && !options.all) {
+          console.log(chalk.red('✖ You must specify a prompt name or use the --all flag.'))
           return
         }
 
-        const adapter = AgentManager.getAdapter(agentName)
+        const adapters = resolveAdapters(options)
 
-        const installed = await adapter.isInstalled(promptName)
+        if (options.all) {
+          const names = adapters.map(a => a.displayName)
+          const label = names.length === 1
+            ? names[0]
+            : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+            
+          const shouldRemoveAll = await confirm({
+            message: `Are you sure you want to remove ALL managed prompts from ${label}?`,
+            initialValue: false
+          })
 
-        if (!installed) {
-          console.log(
-            chalk.yellow(`Prompt "${promptName}" was not found on ${adapter.displayName}.`)
-          )
+          if (isCancel(shouldRemoveAll) || !shouldRemoveAll) {
+            console.log(chalk.yellow('Operation cancelled.'))
+            return
+          }
+
+          let anyRemoved = false
+
+          for (const adapter of adapters) {
+            const installedPrompts = await adapter.listInstalled()
+            
+            if (installedPrompts.length > 0) {
+              for (const p of installedPrompts) {
+                await adapter.uninstall(p)
+              }
+              console.log(chalk.green(`✔ Removed ${installedPrompts.length} prompt(s) from ${adapter.displayName}.`))
+              anyRemoved = true
+            }
+          }
+
+          if (!anyRemoved) {
+            console.log(chalk.yellow(`No prompts were found to remove on ${label}.`))
+          }
+          
           return
         }
 
-        await adapter.uninstall(promptName)
+        // Remove specific prompt
+        if (promptName) {
+          let removedCount = 0
 
-        console.log(
-          chalk.green(`✔ Prompt "${promptName}" successfully removed from ${adapter.displayName}.`)
-        )
+          for (const adapter of adapters) {
+            const installed = await adapter.isInstalled(promptName)
+
+            if (installed) {
+              await adapter.uninstall(promptName)
+              console.log(chalk.green(`✔ Prompt "${promptName}" successfully removed from ${adapter.displayName}.`))
+              removedCount++
+            }
+          }
+
+          if (removedCount === 0) {
+            const isAllAgents = !options.claude && !options.codex && !options.antigravity
+            const label = isAllAgents ? 'any agent' : 'the selected agent(s)'
+            console.log(chalk.yellow(`Prompt "${promptName}" was not found on ${label}.`))
+          }
+        }
+
       } catch (error) {
         if (isPermissionError(error)) {
           console.log(
