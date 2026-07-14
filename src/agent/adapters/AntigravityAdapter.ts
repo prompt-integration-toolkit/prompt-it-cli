@@ -32,10 +32,12 @@ export class AntigravityAdapter implements AgentAdapter {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async isInstalled(promptName: string, _options?: InstallOptions): Promise<boolean> {
     return this.hasSignature(promptName);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async install(prompt: Prompt, _options?: InstallOptions): Promise<void> {
     const artifactsDir = this.getArtifactsDir(prompt.name);
     const metadataPath = this.getMetadataFilePath(prompt.name);
@@ -55,6 +57,7 @@ export class AntigravityAdapter implements AgentAdapter {
     await fs.promises.writeFile(promptPath, content, 'utf-8');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async uninstall(promptName: string, _options?: InstallOptions): Promise<void> {
     const dir = this.getKIDir(promptName);
     await fs.promises.rm(dir, { recursive: true, force: true });

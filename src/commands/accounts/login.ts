@@ -1,5 +1,5 @@
 import logger from '../../utils/logger.js'
-import { text, password, isCancel, cancel, outro } from '@clack/prompts'
+import { text, password, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'

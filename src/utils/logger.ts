@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import { outro } from '@clack/prompts'
 
 export const logger = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   error: (message: string, _err?: unknown) => {
     const text = message.startsWith('Error:') ? message : `Error: ${message}`
     console.log(chalk.red(text))

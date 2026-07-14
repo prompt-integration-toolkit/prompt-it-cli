@@ -94,3 +94,11 @@ if (error) {
 
 **RULE:**
 Whenever performing repository operations via the GitHub CLI (such as opening Pull Requests or creating issues), you MUST read and strictly adhere to the established templates and patterns located in the `.github` directory (e.g., `PULL_REQUEST_TEMPLATE.md` or issue templates). Do not use generic descriptions; always format your PRs and commits according to the project's standardized structure.
+
+---
+
+## 7. Pre-commit CI Checks
+
+**RULE:**
+Before committing any changes or declaring a feature complete, you MUST run the project's local CI checks (`npm run build`, `npm run lint`, `npm run test`). 
+If any tests fail and the errors pose a risk to the project's progress or future stability, you MUST NOT commit the code. Instead, halt your current process, clearly notify the USER of the exact errors, and ask for permission to proceed with fixing them.

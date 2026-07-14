@@ -4,7 +4,7 @@ import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import clipboard from 'clipboardy'
-import { select, confirm, isCancel, cancel, outro } from '@clack/prompts'
+import { select, confirm, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'

@@ -24,10 +24,12 @@ export class CodexAdapter implements AgentAdapter {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async isInstalled(promptName: string, _options?: InstallOptions): Promise<boolean> {
     return this.hasSignature(this.getSkillFilePath(promptName));
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async install(prompt: Prompt, _options?: InstallOptions): Promise<void> {
     const dir = this.getSkillDir(prompt.name);
     const filePath = this.getSkillFilePath(prompt.name);
@@ -43,6 +45,7 @@ export class CodexAdapter implements AgentAdapter {
     await fs.promises.writeFile(filePath, content, 'utf-8');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async uninstall(promptName: string, _options?: InstallOptions): Promise<void> {
     const dir = this.getSkillDir(promptName);
     await fs.promises.rm(dir, { recursive: true, force: true });

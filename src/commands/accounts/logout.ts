@@ -1,5 +1,5 @@
 import logger from '../../utils/logger.js'
-import { confirm, isCancel, cancel, outro } from '@clack/prompts'
+import { confirm, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { getSession, clearSession } from '../../services/session.js'

@@ -1,6 +1,5 @@
 import logger from '../../utils/logger.js'
 import chalk from 'chalk'
-import { outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { getSession } from '../../services/session.js'
