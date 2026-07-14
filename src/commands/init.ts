@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import path from 'node:path'
 import process from 'node:process'
 import chalk from 'chalk'
@@ -50,11 +51,11 @@ export function registerInitCommand(program: Command): void {
           spaces: 2
         })
 
-        outro(chalk.green(`${PROMPT_DETAILS_FILE} created successfully.`))
+        logger.success(`${PROMPT_DETAILS_FILE} created successfully.`, true)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }

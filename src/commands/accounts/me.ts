@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import chalk from 'chalk'
 import { outro } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -13,23 +14,23 @@ export function registerMeCommand(program: Command): void {
         const session = await getSession()
 
         if (!session) {
-          console.log(chalk.yellow('You are not logged in.'))
+          logger.warn('You are not logged in.')
           console.log(chalk.gray('Run: prompt-it login'))
           return
         }
 
-        console.log('')
-        console.log(chalk.cyan('Prompt-it account'))
+        logger.blank()
+        logger.header('Prompt-it account')
         console.log(chalk.gray('-----------------'))
-        console.log(`${chalk.bold('User ID:')} ${session.user.id}`)
-        console.log(`${chalk.bold('Email:')} ${session.user.email || 'unknown'}`)
-        console.log('')
+        logger.property('User ID:', `${session.user.id}`)
+        logger.property('Email:', `${session.user.email || 'unknown'}`)
+        logger.blank()
 
-        outro(chalk.green('You are logged in.'))
+        logger.success('You are logged in.', true)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }

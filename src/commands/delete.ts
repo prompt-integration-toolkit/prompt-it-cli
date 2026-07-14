@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import { text, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -41,7 +42,7 @@ async function handleDelete(inputName: string): Promise<void> {
     const session = await getSession()
 
     if (!session) {
-      console.log(chalk.yellow('You are not logged in.'))
+      logger.warn('You are not logged in.')
       console.log(chalk.gray('Run: prompt-it login'))
       return
     }
@@ -58,7 +59,7 @@ async function handleDelete(inputName: string): Promise<void> {
     if (hasVersion) {
       const [promptName, targetVersion] = inputName.split('@')
       if (!promptName || !targetVersion) {
-        console.log(chalk.red('Invalid format. Use prompt-name or prompt-name@version'))
+        logger.error('Invalid format. Use prompt-name or prompt-name@version')
         return
       }
       await handleDeleteVersion(profile, promptName, targetVersion)
@@ -68,7 +69,7 @@ async function handleDelete(inputName: string): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-    console.log(chalk.red(`Error: ${message}`))
+    logger.error(`Error: ${message}`)
   }
 }
 
@@ -76,12 +77,12 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
   const prompt = await findActivePrompt(profile.username, name)
 
   if (!prompt) {
-    console.log(chalk.red(`Prompt not found: ${profile.username}/${name}`))
+    logger.error(`Prompt not found: ${profile.username}/${name}`)
     return
   }
 
   if (prompt.owner_id !== profile.id) {
-    console.log(chalk.red('You do not own this prompt.'))
+    logger.error('You do not own this prompt.')
     return
   }
 
@@ -92,7 +93,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
     .is('deleted_at', null)
 
   if (error) {
-    console.log(chalk.red(`Could not fetch versions: ${error.message}`))
+    logger.error(`Could not fetch versions: ${error.message}`)
     return
   }
 
@@ -102,7 +103,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
 
   const targetIndex = sortedVersions.findIndex((v) => v.version === version)
   if (targetIndex === -1) {
-    console.log(chalk.red(`Version ${version} not found in prompt ${name}.`))
+    logger.error(`Version ${version} not found in prompt ${name}.`)
     return
   }
 
@@ -123,21 +124,21 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
 
   if (deletingCurrent) {
     if (targetIndex === 0) {
-      console.log('')
+      logger.blank()
       console.log(
         chalk.yellow(
           `Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`
         )
       )
-      console.log(chalk.red('Please delete the entire prompt instead.'))
+      logger.error('Please delete the entire prompt instead.')
       return
     }
     newCurrentVersion = sortedVersions[targetIndex - 1].version
     newCurrentContent = await getPromptContentByVersion(prompt.id, newCurrentVersion)
   }
 
-  console.log('')
-  console.log(chalk.cyan('Delete version'))
+  logger.blank()
+  logger.header('Delete version')
   console.log(chalk.gray('--------------'))
   console.log(`${chalk.bold('Prompt:')}               ${profile.username}/${name}`)
   console.log(`${chalk.bold('Target version:')}       ${version}`)
@@ -150,7 +151,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
   if (newCurrentVersion) {
     console.log(`${chalk.bold('New current version:')}  ${chalk.green(newCurrentVersion)}`)
   }
-  console.log('')
+  logger.blank()
 
   const confirmation = await text({
     message: `Continue? Type "${version}" to confirm:`,
@@ -163,7 +164,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
   }
 
   if (confirmation !== version) {
-    console.log(chalk.red('Confirmation did not match. Aborting.'))
+    logger.error('Confirmation did not match. Aborting.')
     return
   }
 
@@ -178,7 +179,7 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
     .select('id')
 
   if (delError) {
-    console.log(chalk.red(`Delete error: ${delError.message}`))
+    logger.error(`Delete error: ${delError.message}`)
     return
   }
 
@@ -233,12 +234,12 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   const prompt = await findActivePrompt(profile.username, name)
 
   if (!prompt) {
-    console.log(chalk.red(`Prompt not found: ${profile.username}/${name}`))
+    logger.error(`Prompt not found: ${profile.username}/${name}`)
     return
   }
 
   if (prompt.owner_id !== profile.id) {
-    console.log(chalk.red('You do not own this prompt.'))
+    logger.error('You do not own this prompt.')
     return
   }
 
@@ -248,17 +249,17 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   expiresAt.setDate(expiresAt.getDate() + 1)
   const expiresAtFormatted = expiresAt.toISOString().split('T')[0]
 
-  console.log('')
-  console.log(chalk.cyan('Delete prompt'))
+  logger.blank()
+  logger.header('Delete prompt')
   console.log(chalk.gray('-------------'))
   console.log(`${chalk.bold('Prompt:')}          ${profile.username}/${name}`)
   console.log(`${chalk.bold('Current version:')} ${prompt.current_version}`)
   console.log(`${chalk.bold('Versions:')}        ${versionCount}`)
-  console.log('')
+  logger.blank()
   console.log(chalk.gray('This prompt will no longer appear in search or get.'))
   console.log(chalk.gray(`It will be permanently deleted after 1 day (${expiresAtFormatted}).`))
   console.log(chalk.gray('This action will not reset your post limit usage.'))
-  console.log('')
+  logger.blank()
 
   const confirmation = await text({
     message: `Continue? Type "${name}" to confirm:`,
@@ -271,7 +272,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
   }
 
   if (confirmation !== name) {
-    console.log(chalk.red('Confirmation did not match. Aborting.'))
+    logger.error('Confirmation did not match. Aborting.')
     return
   }
 
@@ -284,7 +285,7 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
     .eq('id', prompt.id)
 
   if (error) {
-    console.log(chalk.red(`Delete error: ${error.message}`))
+    logger.error(`Delete error: ${error.message}`)
     return
   }
 

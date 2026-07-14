@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import { diffLines } from 'diff'
 import type { Command } from 'commander'
@@ -26,7 +27,7 @@ export function registerListCommand(program: Command): void {
           }
 
           if (!raw) {
-            console.log(chalk.red('Username is required. Use: prompt-it list @<username>'))
+            logger.error('Username is required. Use: prompt-it list @<username>')
             return
           }
 
@@ -37,7 +38,7 @@ export function registerListCommand(program: Command): void {
         const session = await getSession()
 
         if (!session) {
-          console.log(chalk.red('You must be logged in to use this command.'))
+          logger.error('You must be logged in to use this command.')
           return
         }
 
@@ -49,7 +50,7 @@ export function registerListCommand(program: Command): void {
         if (target.includes('@')) {
           const [promptName, version] = target.split('@')
           if (!promptName || !version) {
-            console.log(chalk.red('Invalid format. Use <prompt-name>@<version>.'))
+            logger.error('Invalid format. Use <prompt-name>@<version>.')
             return
           }
           await showVersionDiff(session.user.id, promptName, version)
@@ -59,7 +60,7 @@ export function registerListCommand(program: Command): void {
         await listPromptDetails(session.user.id, target)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }
@@ -79,7 +80,7 @@ async function listAllPrompts(userId: string): Promise<void> {
   const prompts = data ?? []
 
   if (prompts.length === 0) {
-    console.log(chalk.yellow('No prompts found.'))
+    logger.warn('No prompts found.')
     return
   }
 
@@ -95,7 +96,7 @@ async function listAllPrompts(userId: string): Promise<void> {
     }
 
     console.log(chalk.gray(`   Version: v${prompt.current_version}`))
-    console.log('')
+    logger.blank()
   })
 }
 
@@ -113,7 +114,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
   }
 
   if (!prompt) {
-    console.log(chalk.red(`Prompt not found: ${promptName}`))
+    logger.error(`Prompt not found: ${promptName}`)
     return
   }
 
@@ -154,7 +155,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     console.log(`  - ${chalk.cyan('v' + v.version)}${currentLabel} - ${timeLabel}`)
   }
 
-  console.log('')
+  logger.blank()
 }
 
 async function showVersionDiff(
@@ -175,7 +176,7 @@ async function showVersionDiff(
   }
 
   if (!prompt) {
-    console.log(chalk.red(`Prompt not found: ${promptName}`))
+    logger.error(`Prompt not found: ${promptName}`)
     return
   }
 
@@ -194,7 +195,7 @@ async function showVersionDiff(
   const targetIndex = sortedVersions.indexOf(targetVersion)
 
   if (targetIndex === -1) {
-    console.log(chalk.red(`Version ${targetVersion} not found for prompt ${promptName}.`))
+    logger.error(`Version ${targetVersion} not found for prompt ${promptName}.`)
     return
   }
 
@@ -223,15 +224,15 @@ async function showVersionDiff(
     const lines = part.value.replace(/\n$/, '').split('\n')
     for (const line of lines) {
       if (part.added) {
-        console.log(chalk.green(`+${line}`))
+        logger.success(`+${line}`, false)
       } else if (part.removed) {
-        console.log(chalk.red(`-${line}`))
+        logger.error(`-${line}`)
       } else {
         console.log(chalk.gray(` ${line}`))
       }
     }
   }
-  console.log('')
+  logger.blank()
 }
 
 async function listUserPublicPrompts(username: string): Promise<void> {
@@ -246,7 +247,7 @@ async function listUserPublicPrompts(username: string): Promise<void> {
   }
 
   if (!profile) {
-    console.log(chalk.red(`User not found: @${username}`))
+    logger.error(`User not found: @${username}`)
     return
   }
 
@@ -265,7 +266,7 @@ async function listUserPublicPrompts(username: string): Promise<void> {
   const prompts = data ?? []
 
   if (prompts.length === 0) {
-    console.log(chalk.yellow(`@${username} has no public prompts.`))
+    logger.warn(`@${username} has no public prompts.`)
     return
   }
 
@@ -282,6 +283,6 @@ async function listUserPublicPrompts(username: string): Promise<void> {
 
     console.log(chalk.gray(`   Version: v${prompt.current_version}`))
     console.log(chalk.gray(`   Get: prompt-it get ${username}/${prompt.name}`))
-    console.log('')
+    logger.blank()
   })
 }

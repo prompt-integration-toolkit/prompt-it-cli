@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import type { Command } from 'commander'
 
@@ -20,7 +21,7 @@ async function handleUses(): Promise<void> {
     const session = await getSession()
 
     if (!session) {
-      console.log(chalk.yellow('You are not logged in.'))
+      logger.warn('You are not logged in.')
       console.log(chalk.gray('Run: prompt-it login'))
       return
     }
@@ -34,12 +35,12 @@ async function handleUses(): Promise<void> {
     const count = await getUserPostCount(profile.id)
     const remaining = POST_LIMIT - count
 
-    console.log('')
-    console.log(chalk.cyan('Post usage'))
+    logger.blank()
+    logger.header('Post usage')
     console.log(chalk.gray('----------'))
-    console.log(`${chalk.bold('Used:')}      ${count}/${POST_LIMIT}`)
-    console.log(`${chalk.bold('Remaining:')} ${remaining}`)
-    console.log('')
+    logger.property('Used:', `     ${count}/${POST_LIMIT}`)
+    logger.property('Remaining:', `${remaining}`)
+    logger.blank()
 
     if (count >= POST_LIMIT) {
       console.log(
@@ -49,11 +50,11 @@ async function handleUses(): Promise<void> {
         )
       )
     } else if (remaining <= 10) {
-      console.log(chalk.yellow(`Warning: only ${remaining} post(s) remaining.`))
+      logger.warn(`Warning: only ${remaining} post(s) remaining.`)
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-    console.log(chalk.red(`Error: ${message}`))
+    logger.error(`Error: ${message}`)
   }
 }

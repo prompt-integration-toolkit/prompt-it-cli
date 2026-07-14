@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import chalk from 'chalk'
 import { text, password, confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -73,7 +74,7 @@ export function registerRegisterCommand(program: Command): void {
         const usernameTaken = await usernameAlreadyExists(String(username))
 
         if (usernameTaken) {
-          console.log(chalk.red('This username is already taken. Choose another one.'))
+          logger.error('This username is already taken. Choose another one.')
           return
         }
 
@@ -93,7 +94,7 @@ export function registerRegisterCommand(program: Command): void {
         })
 
         if (signUpError) {
-          console.log(chalk.red(`Error: ${signUpError.message}`))
+          logger.error(`Error: ${signUpError.message}`)
           return
         }
 
@@ -115,7 +116,7 @@ export function registerRegisterCommand(program: Command): void {
         })
 
         if (profileError) {
-          console.log(chalk.red(`Profile error: ${profileError.message}`))
+          logger.error(`Profile error: ${profileError.message}`)
           return
         }
 
@@ -129,7 +130,7 @@ export function registerRegisterCommand(program: Command): void {
             }
           })
 
-          outro(chalk.green(`Account created and logged in as ${username}.`))
+          logger.success(`Account created and logged in as ${username}.`, true)
           return
         }
 
@@ -137,7 +138,7 @@ export function registerRegisterCommand(program: Command): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }

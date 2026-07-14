@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import { confirm, isCancel } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -80,12 +81,12 @@ export function registerAgentCommand(program: Command): void {
         const agentName = resolveAgentName(options)
 
         if (!agentName) {
-          console.log(chalk.red('You must specify an agent: --claude, --codex, or --antigravity.'))
+          logger.error('You must specify an agent: --claude, --codex, or --antigravity.')
           return
         }
 
         if (agentName === 'multiple') {
-          console.log(chalk.red('Please specify only one agent at a time.'))
+          logger.error('Please specify only one agent at a time.')
           return
         }
 
@@ -96,7 +97,7 @@ export function registerAgentCommand(program: Command): void {
         const prompt = await fetchPrompt(user, promptName)
 
         if (!prompt) {
-          console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
+          logger.error(`Prompt not found: ${user}/${promptName}`)
           return
         }
 
@@ -134,7 +135,7 @@ export function registerAgentCommand(program: Command): void {
         }
 
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 
@@ -149,12 +150,12 @@ export function registerAgentCommand(program: Command): void {
     .action(async (promptName: string | undefined, options: AgentRemoveOptions) => {
       try {
         if (promptName && options.all) {
-          console.log(chalk.red('✖ Cannot specify both a prompt name and the --all flag.'))
+          logger.error('✖ Cannot specify both a prompt name and the --all flag.')
           return
         }
 
         if (!promptName && !options.all) {
-          console.log(chalk.red('✖ You must specify a prompt name or use the --all flag.'))
+          logger.error('✖ You must specify a prompt name or use the --all flag.')
           return
         }
 
@@ -172,7 +173,7 @@ export function registerAgentCommand(program: Command): void {
           })
 
           if (isCancel(shouldRemoveAll) || !shouldRemoveAll) {
-            console.log(chalk.yellow('Operation cancelled.'))
+            logger.warn('Operation cancelled.')
             return
           }
 
@@ -185,13 +186,13 @@ export function registerAgentCommand(program: Command): void {
               for (const p of installedPrompts) {
                 await adapter.uninstall(p)
               }
-              console.log(chalk.green(`✔ Removed ${installedPrompts.length} prompt(s) from ${adapter.displayName}.`))
+              logger.success(`✔ Removed ${installedPrompts.length} prompt(s) from ${adapter.displayName}.`, false)
               anyRemoved = true
             }
           }
 
           if (!anyRemoved) {
-            console.log(chalk.yellow(`No prompts were found to remove on ${label}.`))
+            logger.warn(`No prompts were found to remove on ${label}.`)
           }
           
           return
@@ -206,7 +207,7 @@ export function registerAgentCommand(program: Command): void {
 
             if (installed) {
               await adapter.uninstall(promptName)
-              console.log(chalk.green(`✔ Prompt "${promptName}" successfully removed from ${adapter.displayName}.`))
+              logger.success(`✔ Prompt "${promptName}" successfully removed from ${adapter.displayName}.`, false)
               removedCount++
             }
           }
@@ -214,7 +215,7 @@ export function registerAgentCommand(program: Command): void {
           if (removedCount === 0) {
             const isAllAgents = !options.claude && !options.codex && !options.antigravity
             const label = isAllAgents ? 'any agent' : 'the selected agent(s)'
-            console.log(chalk.yellow(`Prompt "${promptName}" was not found on ${label}.`))
+            logger.warn(`Prompt "${promptName}" was not found on ${label}.`)
           }
         }
 
@@ -229,7 +230,7 @@ export function registerAgentCommand(program: Command): void {
         }
 
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 
@@ -260,7 +261,7 @@ export function registerAgentCommand(program: Command): void {
         }
 
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }
@@ -323,35 +324,35 @@ async function listAllInstalledPrompts(
     const noneSelected = !options.claude && !options.codex && !options.antigravity
 
     if (allSelected || noneSelected) {
-      console.log(chalk.yellow('No prompts installed on any agent.'))
+      logger.warn('No prompts installed on any agent.')
     } else {
       const emptyNames = results.map((r) => r.displayName)
       const label = emptyNames.length === 1
         ? emptyNames[0]
         : `${emptyNames.slice(0, -1).join(', ')} and ${emptyNames[emptyNames.length - 1]}`
-      console.log(chalk.yellow(`No prompts installed on ${label}.`))
+      logger.warn(`No prompts installed on ${label}.`)
     }
     return
   }
 
-  console.log('')
+  logger.blank()
   console.log(chalk.white(formatAgentHeader(options)))
-  console.log('')
+  logger.blank()
 
   for (const result of results) {
     if (result.prompts.length > 0) {
-      console.log(chalk.cyan(result.displayName))
+      logger.header(result.displayName)
       for (const prompt of result.prompts) {
         console.log(`  • ${prompt}`)
       }
-      console.log('')
+      logger.blank()
     } else {
       const allSelected = options.claude && options.codex && options.antigravity
       const noneSelected = !options.claude && !options.codex && !options.antigravity
 
       if (!allSelected && !noneSelected) {
-        console.log(chalk.yellow(`No prompts installed on ${result.displayName}.`))
-        console.log('')
+        logger.warn(`No prompts installed on ${result.displayName}.`)
+        logger.blank()
       }
     }
   }
@@ -371,14 +372,14 @@ async function searchPromptAcrossAgents(
   }
 
   if (foundOn.length === 0) {
-    console.log(chalk.yellow(`Prompt "${promptName}" is not installed on any agent.`))
+    logger.warn(`Prompt "${promptName}" is not installed on any agent.`)
     return
   }
 
-  console.log('')
+  logger.blank()
   console.log(chalk.white(`Prompt "${promptName}" is installed on:`))
   for (const name of foundOn) {
     console.log(`  • ${name}`)
   }
-  console.log('')
+  logger.blank()
 }

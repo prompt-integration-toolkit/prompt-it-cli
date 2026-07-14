@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import { text, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -28,7 +29,7 @@ async function handleRevoke(inputName: string): Promise<void> {
     const session = await getSession()
 
     if (!session) {
-      console.log(chalk.yellow('You are not logged in.'))
+      logger.warn('You are not logged in.')
       console.log(chalk.gray('Run: prompt-it login'))
       return
     }
@@ -45,7 +46,7 @@ async function handleRevoke(inputName: string): Promise<void> {
     if (hasVersion) {
       const [promptName, targetVersion] = inputName.split('@')
       if (!promptName || !targetVersion) {
-        console.log(chalk.red('Invalid format. Use prompt-name or prompt-name@version'))
+        logger.error('Invalid format. Use prompt-name or prompt-name@version')
         return
       }
       await handleRevokeVersion(profile, promptName, targetVersion)
@@ -56,7 +57,7 @@ async function handleRevoke(inputName: string): Promise<void> {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-    console.log(chalk.red(`Error: ${message}`))
+    logger.error(`Error: ${message}`)
   }
 }
 
@@ -70,26 +71,26 @@ async function handleRevokePrompt(profile: UserProfile, name: string): Promise<v
     .maybeSingle()
 
   if (fetchError) {
-    console.log(chalk.red(`Could not fetch prompt: ${fetchError.message}`))
+    logger.error(`Could not fetch prompt: ${fetchError.message}`)
     return
   }
 
   if (!prompt) {
-    console.log(chalk.red(`Deleted prompt not found: ${profile.username}/${name}`))
+    logger.error(`Deleted prompt not found: ${profile.username}/${name}`)
     return
   }
 
   if (prompt.owner_id !== profile.id) {
-    console.log(chalk.red('You do not own this prompt.'))
+    logger.error('You do not own this prompt.')
     return
   }
 
-  console.log('')
-  console.log(chalk.cyan('Revoke prompt'))
+  logger.blank()
+  logger.header('Revoke prompt')
   console.log(chalk.gray('-------------'))
-  console.log(`${chalk.bold('Prompt:')}          ${profile.username}/${name}`)
-  console.log(`${chalk.bold('Current version:')} ${prompt.current_version}`)
-  console.log('')
+  logger.property('Prompt:', `         ${profile.username}/${name}`)
+  logger.property('Current version:', `${prompt.current_version}`)
+  logger.blank()
 
   const confirmation = await text({
     message: `Continue? Type "${name}" to confirm you want to revoke deletion:`,
@@ -102,7 +103,7 @@ async function handleRevokePrompt(profile: UserProfile, name: string): Promise<v
   }
 
   if (confirmation !== name) {
-    console.log(chalk.red('Confirmation did not match. Aborting.'))
+    logger.error('Confirmation did not match. Aborting.')
     return
   }
 
@@ -115,11 +116,11 @@ async function handleRevokePrompt(profile: UserProfile, name: string): Promise<v
     .eq('id', prompt.id)
 
   if (error) {
-    console.log(chalk.red(`Revoke error: ${error.message}`))
+    logger.error(`Revoke error: ${error.message}`)
     return
   }
 
-  outro(chalk.green(`Prompt restored successfully: ${profile.username}/${name}`))
+  logger.success(`Prompt restored successfully: ${profile.username}/${name}`, true)
 }
 
 async function handleRevokeVersion(
@@ -136,17 +137,17 @@ async function handleRevokeVersion(
     .maybeSingle()
 
   if (fetchError) {
-    console.log(chalk.red(`Could not fetch prompt: ${fetchError.message}`))
+    logger.error(`Could not fetch prompt: ${fetchError.message}`)
     return
   }
 
   if (!prompt) {
-    console.log(chalk.red(`Active prompt not found: ${profile.username}/${name}`))
+    logger.error(`Active prompt not found: ${profile.username}/${name}`)
     return
   }
 
   if (prompt.owner_id !== profile.id) {
-    console.log(chalk.red('You do not own this prompt.'))
+    logger.error('You do not own this prompt.')
     return
   }
 
@@ -156,7 +157,7 @@ async function handleRevokeVersion(
     .eq('prompt_id', prompt.id)
 
   if (verError) {
-    console.log(chalk.red(`Could not fetch versions: ${verError.message}`))
+    logger.error(`Could not fetch versions: ${verError.message}`)
     return
   }
 
@@ -166,13 +167,13 @@ async function handleRevokeVersion(
 
   const targetIndex = sortedVersions.findIndex((v) => v.version === version)
   if (targetIndex === -1) {
-    console.log(chalk.red(`Version ${version} not found in prompt ${name}.`))
+    logger.error(`Version ${version} not found in prompt ${name}.`)
     return
   }
 
   const targetVersionRecord = sortedVersions[targetIndex]
   if (!targetVersionRecord.deleted_at) {
-    console.log(chalk.yellow(`Version ${version} is already active.`))
+    logger.warn(`Version ${version} is already active.`)
     return
   }
 
@@ -195,15 +196,15 @@ async function handleRevokeVersion(
 
   const versionsToRestore = sortedVersions.filter((v) => v.deleted_at === targetDeletedAt)
 
-  console.log('')
-  console.log(chalk.cyan('Revoke version'))
+  logger.blank()
+  logger.header('Revoke version')
   console.log(chalk.gray('--------------'))
-  console.log(`${chalk.bold('Prompt:')}          ${profile.username}/${name}`)
-  console.log(`${chalk.bold('Target version:')}  ${version}`)
+  logger.property('Prompt:', `         ${profile.username}/${name}`)
+  logger.property('Target version:', ` ${version}`)
   console.log(
     `${chalk.bold('Restoring:')}       ${versionsToRestore.map((v) => v.version).join(', ')}`
   )
-  console.log('')
+  logger.blank()
 
   const confirmation = await text({
     message: `Continue? Type "${version}" to confirm:`,
@@ -216,7 +217,7 @@ async function handleRevokeVersion(
   }
 
   if (confirmation !== version) {
-    console.log(chalk.red('Confirmation did not match. Aborting.'))
+    logger.error('Confirmation did not match. Aborting.')
     return
   }
 
@@ -228,7 +229,7 @@ async function handleRevokeVersion(
     .in('id', idsToRestore)
 
   if (updateError) {
-    console.log(chalk.red(`Revoke error: ${updateError.message}`))
+    logger.error(`Revoke error: ${updateError.message}`)
     return
   }
 
@@ -256,5 +257,5 @@ async function handleRevokeVersion(
     )
   }
 
-  outro(chalk.green('Versions restored successfully!'))
+  logger.success('Versions restored successfully!', true)
 }

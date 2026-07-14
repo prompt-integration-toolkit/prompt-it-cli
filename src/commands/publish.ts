@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import path from 'node:path'
 import process from 'node:process'
 import chalk from 'chalk'
@@ -70,7 +71,7 @@ async function handleInitialPublish(
     const session = await getSession()
 
     if (!session) {
-      console.log(chalk.yellow('You are not logged in.'))
+      logger.warn('You are not logged in.')
       console.log(chalk.gray('Run: prompt-it login'))
       return
     }
@@ -84,7 +85,7 @@ async function handleInitialPublish(
     const details = await readPromptDetails()
 
     if (!details && !promptFileArg) {
-      console.log(chalk.red('prompt-details.json not found.'))
+      logger.error('prompt-details.json not found.')
       console.log(chalk.gray('Run: prompt-it init'))
       return
     }
@@ -92,7 +93,7 @@ async function handleInitialPublish(
     const promptFile = promptFileArg || details?.['prompt-file']
 
     if (!promptFile) {
-      console.log(chalk.red('Prompt file is required.'))
+      logger.error('Prompt file is required.')
       return
     }
 
@@ -103,7 +104,7 @@ async function handleInitialPublish(
     const tags = options.tags ? normalizeTags(options.tags) : normalizeTags(details?.tags)
 
     if (!name || !title || !description) {
-      console.log(chalk.red('Missing prompt details.'))
+      logger.error('Missing prompt details.')
       console.log(
         chalk.gray(
           'Required fields: name, title, description. Use prompt-details.json or command flags.'
@@ -120,7 +121,7 @@ async function handleInitialPublish(
     }
 
     if (!isValidSemver(version)) {
-      console.log(chalk.red('Invalid version. Use format like 1.0.0.'))
+      logger.error('Invalid version. Use format like 1.0.0.')
       return
     }
 
@@ -129,15 +130,15 @@ async function handleInitialPublish(
     const existingPrompt = await findExistingPrompt(profile.username, name)
 
     if (existingPrompt) {
-      console.log(chalk.red(`Prompt already exists: ${profile.username}/${name}`))
+      logger.error(`Prompt already exists: ${profile.username}/${name}`)
       console.log(chalk.gray('Use: prompt-it publish update'))
       return
     }
 
     await assertWithinPostLimit(profile.id)
 
-    console.log('')
-    console.log(chalk.cyan('Publish summary'))
+    logger.blank()
+    logger.header('Publish summary')
     console.log(chalk.gray('---------------'))
     console.log(`${chalk.bold('Author:')} ${profile.username}`)
     console.log(`${chalk.bold('Name:')} ${name}`)
@@ -145,7 +146,7 @@ async function handleInitialPublish(
     console.log(`${chalk.bold('Description:')} ${description}`)
     console.log(`${chalk.bold('Version:')} ${version}`)
     console.log(`${chalk.bold('Tags:')} ${tags.join(', ') || 'none'}`)
-    console.log('')
+    logger.blank()
 
     const shouldPublish = await confirm({
       message: 'Publish prompt?',
@@ -174,7 +175,7 @@ async function handleInitialPublish(
       .single()
 
     if (promptError) {
-      console.log(chalk.red(`Publish error: ${promptError.message}`))
+      logger.error(`Publish error: ${promptError.message}`)
       return
     }
 
@@ -189,15 +190,15 @@ async function handleInitialPublish(
     })
 
     if (versionError) {
-      console.log(chalk.red(`Version error: ${versionError.message}`))
+      logger.error(`Version error: ${versionError.message}`)
       return
     }
 
-    outro(chalk.green(`Prompt published successfully: ${profile.username}/${name}`))
+    logger.success(`Prompt published successfully: ${profile.username}/${name}`, true)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-    console.log(chalk.red(`Error: ${message}`))
+    logger.error(`Error: ${message}`)
   }
 }
 
@@ -209,7 +210,7 @@ async function handlePublishUpdate(
     const session = await getSession()
 
     if (!session) {
-      console.log(chalk.yellow('You are not logged in.'))
+      logger.warn('You are not logged in.')
       console.log(chalk.gray('Run: prompt-it login'))
       return
     }
@@ -223,7 +224,7 @@ async function handlePublishUpdate(
     const details = await readPromptDetails()
 
     if (!details && !promptFileArg) {
-      console.log(chalk.red('prompt-details.json not found.'))
+      logger.error('prompt-details.json not found.')
       console.log(chalk.gray('Run: prompt-it init'))
       return
     }
@@ -231,7 +232,7 @@ async function handlePublishUpdate(
     const promptFile = promptFileArg || details?.['prompt-file']
 
     if (!promptFile) {
-      console.log(chalk.red('Prompt file is required.'))
+      logger.error('Prompt file is required.')
       return
     }
 
@@ -242,7 +243,7 @@ async function handlePublishUpdate(
     const tags = options.tags ? normalizeTags(options.tags) : normalizeTags(details?.tags)
 
     if (!name || !title || !description || !newVersion) {
-      console.log(chalk.red('Missing prompt details.'))
+      logger.error('Missing prompt details.')
       console.log(
         chalk.gray(
           'Required fields: name, title, description, version. Use prompt-details.json or command flags.'
@@ -259,20 +260,20 @@ async function handlePublishUpdate(
     }
 
     if (!isValidSemver(newVersion)) {
-      console.log(chalk.red('Invalid version. Use format like 1.0.0.'))
+      logger.error('Invalid version. Use format like 1.0.0.')
       return
     }
 
     const existingPrompt = await findExistingPrompt(profile.username, name)
 
     if (!existingPrompt) {
-      console.log(chalk.red(`Prompt not found: ${profile.username}/${name}`))
+      logger.error(`Prompt not found: ${profile.username}/${name}`)
       console.log(chalk.gray('Use prompt-it publish first.'))
       return
     }
 
     if (existingPrompt.owner_id !== profile.id) {
-      console.log(chalk.red('You cannot update a prompt that you do not own.'))
+      logger.error('You cannot update a prompt that you do not own.')
       return
     }
 
@@ -290,7 +291,7 @@ async function handlePublishUpdate(
     const newContent = await readPromptFile(promptFile)
 
     if (newContent === existingPrompt.current_content) {
-      console.log(chalk.yellow('No content changes detected.'))
+      logger.warn('No content changes detected.')
       return
     }
 
@@ -310,8 +311,8 @@ async function handlePublishUpdate(
     const snapshotContent = changeType === 'snapshot' ? newContent : null
     const updateMessage = options.message || `Update to ${newVersion}`
 
-    console.log('')
-    console.log(chalk.cyan('Update summary'))
+    logger.blank()
+    logger.header('Update summary')
     console.log(chalk.gray('--------------'))
     console.log(`${chalk.bold('Prompt:')} ${profile.username}/${name}`)
     console.log(`${chalk.bold('Current version:')} ${existingPrompt.current_version}`)
@@ -321,7 +322,7 @@ async function handlePublishUpdate(
     console.log(`${chalk.bold('Description:')} ${description}`)
     console.log(`${chalk.bold('Tags:')} ${tags.join(', ') || 'none'}`)
     console.log(`${chalk.bold('Message:')} ${updateMessage}`)
-    console.log('')
+    logger.blank()
 
     const shouldUpdate = await confirm({
       message: 'Update prompt?',
@@ -344,7 +345,7 @@ async function handlePublishUpdate(
     })
 
     if (versionError) {
-      console.log(chalk.red(`Version error: ${versionError.message}`))
+      logger.error(`Version error: ${versionError.message}`)
       return
     }
 
@@ -361,15 +362,15 @@ async function handlePublishUpdate(
       .eq('id', existingPrompt.id)
 
     if (updateError) {
-      console.log(chalk.red(`Update error: ${updateError.message}`))
+      logger.error(`Update error: ${updateError.message}`)
       return
     }
 
-    outro(chalk.green(`Prompt updated successfully: ${profile.username}/${name} → ${newVersion}`))
+    logger.success(`Prompt updated successfully: ${profile.username}/${name} → ${newVersion}`, true)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-    console.log(chalk.red(`Error: ${message}`))
+    logger.error(`Error: ${message}`)
   }
 }
 

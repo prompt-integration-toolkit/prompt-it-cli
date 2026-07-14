@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import chalk from 'chalk'
 import { select, isCancel, cancel, outro, spinner } from '@clack/prompts'
 import type { Command } from 'commander'
@@ -37,7 +38,7 @@ export function registerSearchCommand(program: Command): void {
         const normalizedQuery = query.trim()
 
         if (!normalizedQuery) {
-          console.log(chalk.red('Search query cannot be empty.'))
+          logger.error('Search query cannot be empty.')
           return
         }
 
@@ -45,7 +46,7 @@ export function registerSearchCommand(program: Command): void {
           const userQuery = normalizedQuery.slice(1)
 
           if (!userQuery) {
-            console.log(chalk.red('Username is required. Example: prompt-it search @username'))
+            logger.error('Username is required. Example: prompt-it search @username')
             return
           }
 
@@ -57,7 +58,7 @@ export function registerSearchCommand(program: Command): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }
@@ -126,7 +127,7 @@ async function paginatePromptResults(params: {
     })
 
     if (totalPages <= 1) {
-      outro(chalk.green('Search finished.'))
+      logger.success('Search finished.', true)
       return
     }
 
@@ -173,13 +174,13 @@ function renderPromptResults(params: {
   currentPage: number
   totalPages: number
 }): void {
-  console.log('')
-  console.log(chalk.cyan(`Search results for "${params.query}"`))
+  logger.blank()
+  logger.header(`Search results for "${params.query}"`)
   console.log(chalk.gray(`Matched by: ${params.field}`))
   console.log(
     chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
-  console.log('')
+  logger.blank()
 
   params.results.forEach((prompt, index) => {
     const globalIndex = (params.currentPage - 1) * RESULTS_PER_PAGE + index + 1
@@ -191,7 +192,7 @@ function renderPromptResults(params: {
     console.log(chalk.gray(`   Version: ${prompt.current_version}`))
     console.log(chalk.gray(`   Tags: ${tags}`))
     console.log(chalk.gray(`   Get: prompt-it get ${prompt.username}/${prompt.name}`))
-    console.log('')
+    logger.blank()
   })
 }
 
@@ -247,7 +248,7 @@ async function paginateUserResults(params: {
     })
 
     if (totalPages <= 1) {
-      outro(chalk.green('Search finished.'))
+      logger.success('Search finished.', true)
       return
     }
 
@@ -292,12 +293,12 @@ async function renderUserResults(params: {
   currentPage: number
   totalPages: number
 }): Promise<void> {
-  console.log('')
-  console.log(chalk.cyan(`Users found for "${params.query}"`))
+  logger.blank()
+  logger.header(`Users found for "${params.query}"`)
   console.log(
     chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
-  console.log('')
+  logger.blank()
 
   // Fetch all prompt counts for this page in parallel — no more sequential queries
   const promptCounts = await Promise.all(
@@ -314,7 +315,7 @@ async function renderUserResults(params: {
     }
 
     console.log(chalk.gray(`   Public prompts: ${promptCounts[index]}`))
-    console.log('')
+    logger.blank()
   }
 }
 

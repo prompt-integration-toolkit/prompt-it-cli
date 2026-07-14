@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import path from 'node:path'
 import process from 'node:process'
 import chalk from 'chalk'
@@ -32,7 +33,7 @@ export function registerGetCommand(program: Command): void {
         const { user, promptName, version } = parsePromptRef(promptRef)
 
         if (action && action !== 'details') {
-          console.log(chalk.red(`Unknown get action: ${action}`))
+          logger.error(`Unknown get action: ${action}`)
           console.log(chalk.gray('Available action: details'))
           return
         }
@@ -40,14 +41,14 @@ export function registerGetCommand(program: Command): void {
         const prompt = await getPromptFromSupabase(user, promptName)
 
         if (!prompt) {
-          console.log(chalk.red(`Prompt not found: ${user}/${promptName}`))
+          logger.error(`Prompt not found: ${user}/${promptName}`)
           return
         }
 
         const resolvedPrompt = await resolvePromptVersion(prompt, version)
 
         if (options.copy && options.file) {
-          console.log(chalk.red('Use only one option at a time: --copy or --file.'))
+          logger.error('Use only one option at a time: --copy or --file.')
           return
         }
 
@@ -72,7 +73,7 @@ export function registerGetCommand(program: Command): void {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }
@@ -110,8 +111,8 @@ async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
 }
 
 async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean): Promise<void> {
-  console.log('')
-  console.log(chalk.cyan(`# ${prompt.title || prompt.name}`))
+  logger.blank()
+  logger.header(`# ${prompt.title || prompt.name}`)
   console.log(chalk.gray(`Author: ${prompt.username}`))
   console.log(chalk.gray(`Version: ${prompt.resolved_version}`))
 
@@ -119,9 +120,9 @@ async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean):
     console.log(chalk.gray(`Latest version: ${prompt.current_version}`))
   }
 
-  console.log('')
+  logger.blank()
   console.log(prompt.resolved_content)
-  console.log('')
+  logger.blank()
 
   const action = await select<PromptAction>({
     message: 'What do you want to do with this prompt?',
@@ -179,7 +180,7 @@ async function askToCreatePromptDetailsFile(prompt: ResolvedPrompt): Promise<voi
 async function copyPromptToClipboard(prompt: ResolvedPrompt): Promise<void> {
   await clipboard.write(prompt.resolved_content)
 
-  console.log(chalk.green(`Copied "${prompt.title || prompt.name}" to clipboard.`))
+  logger.success(`Copied "${prompt.title || prompt.name}" to clipboard.`, false)
 }
 
 async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
@@ -205,7 +206,7 @@ async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
 
   await fs.writeFile(filePath, prompt.resolved_content, 'utf8')
 
-  console.log(chalk.green(`Created file: ${fileName}`))
+  logger.success(`Created file: ${fileName}`, false)
 }
 
 async function createPromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
@@ -239,5 +240,5 @@ async function createPromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
     spaces: 2
   })
 
-  console.log(chalk.green(`Created file: ${fileName}`))
+  logger.success(`Created file: ${fileName}`, false)
 }
