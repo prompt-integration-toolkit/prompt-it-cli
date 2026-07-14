@@ -1,6 +1,6 @@
 import { text, confirm, select, isCancel, cancel } from '@clack/prompts'
 
-function handleCancel(result: any): asserts result is Exclude<typeof result, symbol> {
+function handleCancel(result: unknown): asserts result is Exclude<typeof result, symbol> {
   if (isCancel(result)) {
     cancel('Operation cancelled.')
     process.exit(0)
@@ -19,6 +19,7 @@ export async function promptConfirm(options: Parameters<typeof confirm>[0]) {
   return result
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function promptSelect<T>(options: any) {
   const result = await select<T>(options)
   handleCancel(result)

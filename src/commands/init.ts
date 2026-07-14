@@ -1,7 +1,6 @@
 import logger from '../utils/logger.js'
 import path from 'node:path'
 import process from 'node:process'
-import chalk from 'chalk'
 import fs from 'fs-extra'
 import { confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'

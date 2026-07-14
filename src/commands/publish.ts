@@ -4,7 +4,7 @@ import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import { createTwoFilesPatch } from 'diff'
-import { confirm, isCancel, cancel, outro } from '@clack/prompts'
+import { confirm, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'

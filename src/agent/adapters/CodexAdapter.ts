@@ -24,11 +24,11 @@ export class CodexAdapter implements AgentAdapter {
     }
   }
 
-  async isInstalled(promptName: string, options?: InstallOptions): Promise<boolean> {
+  async isInstalled(promptName: string, _options?: InstallOptions): Promise<boolean> {
     return this.hasSignature(this.getSkillFilePath(promptName));
   }
 
-  async install(prompt: Prompt, options?: InstallOptions): Promise<void> {
+  async install(prompt: Prompt, _options?: InstallOptions): Promise<void> {
     const dir = this.getSkillDir(prompt.name);
     const filePath = this.getSkillFilePath(prompt.name);
 
@@ -43,7 +43,7 @@ export class CodexAdapter implements AgentAdapter {
     await fs.promises.writeFile(filePath, content, 'utf-8');
   }
 
-  async uninstall(promptName: string, options?: InstallOptions): Promise<void> {
+  async uninstall(promptName: string, _options?: InstallOptions): Promise<void> {
     const dir = this.getSkillDir(promptName);
     await fs.promises.rm(dir, { recursive: true, force: true });
   }

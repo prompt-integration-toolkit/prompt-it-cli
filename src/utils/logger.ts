@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { outro } from '@clack/prompts'
 
 export const logger = {
-  error: (message: string, err?: any) => {
+  error: (message: string, _err?: unknown) => {
     const text = message.startsWith('Error:') ? message : `Error: ${message}`
     console.log(chalk.red(text))
     // Could log err.stack in a verbose/debug mode, but omitting for standard output
