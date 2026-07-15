@@ -1,8 +1,8 @@
-# ![Prompt-It CLI](https://img.shields.io/badge/Prompt--It_CLI-Official_Documentation-10b981?style=for-the-badge&logo=gnubash&logoColor=white)
+# ![Prompt Integration Toolkit CLI](https://img.shields.io/badge/Prompt_Integration_Toolkit_CLI-Official_Documentation-10b981?style=for-the-badge&logo=gnubash&logoColor=white)
 
 ![Node](https://img.shields.io/badge/Environment-Node.js-339933?style=flat-square&logo=nodedotjs&logoColor=white) ![CLI](https://img.shields.io/badge/Interface-CLI-4b5563?style=flat-square&logo=terminal&logoColor=white) ![Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
 
-Welcome to the official documentation for the **Prompt-It CLI**! This command-line tool was built to easily create, manage, publish, and search for incredible Artificial Intelligence prompts.
+Welcome to the official documentation for the **Prompt Integration Toolkit CLI**, abbreviated as **Prompt-it CLI**! This command-line tool was built to easily create, manage, publish, and search for Artificial Intelligence prompts.
 
 Here you will find everything you need to know to use the CLI in your workflow.
 
@@ -10,7 +10,7 @@ Here you will find everything you need to know to use the CLI in your workflow.
 
 ## ![Getting Started](https://img.shields.io/badge/Getting_Started-3b82f6?style=for-the-badge)
 
-To execute commands, use `prompt-it` followed by the desired action. To view help for any command directly in the terminal, simply run:
+The official command-line abbreviation for Prompt Integration Toolkit is `prompt-it`. To execute commands, use `prompt-it` followed by the desired action. To view help for any command directly in the terminal, simply run:
 
 ```bash
 prompt-it help
@@ -27,10 +27,10 @@ The CLI is divided into four main usage categories: **Authentication**, **Prompt
 To interact with the platform's publishing features, you need to be authenticated with your account.
 
 * `prompt-it register`
-  Creates a new Prompt-It account through an interactive flow.
+  Creates a new Prompt Integration Toolkit account through an interactive flow.
 
 * `prompt-it login`
-  Logs into your Prompt-It account to authorize the publishing of new prompts.
+  Logs into your Prompt Integration Toolkit account to authorize the publishing of new prompts.
 
 * `prompt-it logout`
   Securely ends your current session.
@@ -45,7 +45,7 @@ To interact with the platform's publishing features, you need to be authenticate
 
 ### ![Prompt Management & Publishing](https://img.shields.io/badge/2.-Prompt_Management_%26_Publishing-f59e0b?style=flat-square)
 
-These commands allow you to initialize new prompt projects, publish them, and keep them updated on the Prompt-It cloud.
+These commands allow you to initialize new prompt projects, publish them, and keep them updated on the Prompt Integration Toolkit cloud.
 
 * `prompt-it init`
   Generates a template `prompt-details.json` file in your current directory. This file will be used to store essential metadata for your prompt (title, description, version, and tags).
@@ -131,7 +131,7 @@ Commands to directly install, manage, and remove prompts from supported AI agent
 
 ## ![Recommended Workflow](https://img.shields.io/badge/Recommended_Workflow-14b8a6?style=for-the-badge)
 
-If you are new to the **Prompt-It** ecosystem, here is the ideal path to build and share your first prompt with the community:
+If you are new to the **Prompt Integration Toolkit** ecosystem, here is the ideal path to build and share your first prompt with the community:
 
 1. **Initialize the project**: In a new folder, run `prompt-it init`. The vital `prompt-details.json` file will be created.
 2. **Write your prompt**: Create a markdown file (e.g., `my-prompt.md`) and write the guidelines or instructions for the AI.

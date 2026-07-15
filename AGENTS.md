@@ -6,8 +6,8 @@ This document defines the architectural rules and code style for the `prompt-it-
 
 ## 1. Project Context
 
-**What is `prompt-it-cli`?**
-`prompt-it-cli` is a command-line tool designed for storing, organizing, versioning, and reusing prompts. It acts as a package manager for prompts, allowing users to publish their prompts to a central Supabase database and retrieve them globally into their workspaces or tools.
+**What is Prompt Integration Toolkit CLI (`prompt-it-cli`)?**
+Prompt Integration Toolkit CLI, abbreviated as Prompt-it CLI and technically identified as `prompt-it-cli`, is a command-line tool designed for storing, organizing, versioning, and reusing prompts. It acts as a package manager for prompts, allowing users to publish their prompts to a central Supabase database and retrieve them globally into their workspaces or tools.
 
 **How it works:**
 - **Authentication:** Users authenticate via a Supabase backend.

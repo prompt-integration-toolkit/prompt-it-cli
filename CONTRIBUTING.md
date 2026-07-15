@@ -1,12 +1,12 @@
-# Contributing to Prompt-It CLI
+# Contributing to Prompt Integration Toolkit CLI
 
 First off, thanks for taking the time to contribute! 🎉 
 
-The Prompt-It ecosystem thrives on community contributions. Whether you're fixing a bug, proposing a new feature, or improving the documentation, your help is incredibly valuable to us.
+The Prompt Integration Toolkit ecosystem, abbreviated as Prompt-it, thrives on community contributions. Whether you're fixing a bug, proposing a new feature, or improving the documentation, your help is incredibly valuable to us.
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the [Prompt-It Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. If you experience unacceptable behavior, please report it to `promptit.dev@gmail.com`.
+This project and everyone participating in it is governed by the [Prompt Integration Toolkit Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. If you experience unacceptable behavior, please report it to `promptit.dev@gmail.com`.
 
 ## How Can I Contribute?
 

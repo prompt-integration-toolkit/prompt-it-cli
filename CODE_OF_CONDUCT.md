@@ -50,12 +50,12 @@ decisions when appropriate.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces of the **Prompt-It
-ecosystem**, including but not limited to:
+This Code of Conduct applies within all community spaces of the **Prompt Integration
+Toolkit ecosystem**, abbreviated as **Prompt-it**, including but not limited to:
 
-- The [prompt-it-cli](https://github.com/Prompt-It-org/prompt-it-cli) repository (issues, pull requests, discussions, and code reviews)
-- The Prompt-It platform and related services
-- Any official Prompt-It communication channels
+- The [prompt-integration-toolkit/prompt-it-cli](https://github.com/prompt-integration-toolkit/prompt-it-cli) repository (issues, pull requests, discussions, and code reviews)
+- The Prompt Integration Toolkit platform and related services
+- Any official Prompt Integration Toolkit communication channels
 - Public spaces when an individual is representing the project or its community
 
 Examples of representing our project or community include using an official
