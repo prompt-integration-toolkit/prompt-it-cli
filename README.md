@@ -7,7 +7,7 @@
 <a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Contributor Covenant"></a>
 
 <p align="center">
-    <img src=".github/Prompt it cli.png" width="150">
+    <img src=".github/Prompt-it-CLI.png" width="1000">
 </p>
 
 **Prompt Integration Toolkit CLI**, abbreviated as **Prompt-it CLI**, is the terminal interface for the Prompt Integration Toolkit ecosystem.
