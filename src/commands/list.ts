@@ -20,9 +20,7 @@ export function registerListCommand(program: Command): void {
           const raw = target.slice(1) // remove the @
 
           if (raw.includes('/')) {
-            console.log(
-              chalk.red('Invalid format. Use prompt-it get ' + raw + ' to get a specific prompt.')
-            )
+            logger.validation('Invalid format. Use prompt-it get ' + raw + ' to get a specific prompt.')
             return
           }
 
@@ -84,18 +82,18 @@ async function listAllPrompts(userId: string): Promise<void> {
     return
   }
 
-  console.log(`\nYour Prompts [${prompts.length}]\n`)
+  logger.info(`\nYour Prompts [${prompts.length}]\n`)
 
   prompts.forEach((prompt, index) => {
-    console.log(chalk.bold(`${index + 1}. ${prompt.name}`))
+    logger.info(chalk.bold(`${index + 1}. ${prompt.name}`))
 
     if (prompt.description) {
-      console.log(chalk.gray(`   ${prompt.description}`))
+      logger.info(chalk.gray(`   ${prompt.description}`))
     } else {
-      console.log(chalk.gray(`   No description`))
+      logger.info(chalk.gray(`   No description`))
     }
 
-    console.log(chalk.gray(`   Version: v${prompt.current_version}`))
+    logger.info(chalk.gray(`   Version: v${prompt.current_version}`))
     logger.blank()
   })
 }
@@ -130,10 +128,10 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
 
   const sortedVersions = (versions ?? []).sort((a, b) => compareSemver(b.version, a.version))
 
-  console.log(`\n• ${chalk.bold(promptName)}\n`)
-  console.log(`Description: ${prompt.description || 'No description'}`)
-  console.log(`Created at: ${new Date(prompt.created_at).toISOString().split('T')[0]}\n`)
-  console.log('Version History:')
+  logger.info(`\n• ${chalk.bold(promptName)}\n`)
+  logger.info(`Description: ${prompt.description || 'No description'}`)
+  logger.info(`Created at: ${new Date(prompt.created_at).toISOString().split('T')[0]}\n`)
+  logger.info('Version History:')
 
   for (let i = 0; i < sortedVersions.length; i++) {
     const v = sortedVersions[i]
@@ -152,7 +150,7 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
       timeLabel = `Updated ${daysAgo} days ago`
     }
 
-    console.log(`  - ${chalk.cyan('v' + v.version)}${currentLabel} - ${timeLabel}`)
+    logger.info(`  - ${chalk.cyan('v' + v.version)}${currentLabel} - ${timeLabel}`)
   }
 
   logger.blank()
@@ -209,11 +207,11 @@ async function showVersionDiff(
     ? await getPromptContentByVersion(prompt.id, previousVersion)
     : ''
 
-  console.log(`\n${chalk.bold.cyan(`${promptName}@${targetVersion}`)}`)
+  logger.info(`\n${chalk.bold.cyan(`${promptName}@${targetVersion}`)}`)
   if (previousVersion) {
-    console.log(`(Compared to previous version v${previousVersion})\n`)
+    logger.info(`(Compared to previous version v${previousVersion})\n`)
   } else {
-    console.log(`(Initial version)\n`)
+    logger.info(`(Initial version)\n`)
   }
 
   const diff = diffLines(previousContent, targetContent)
@@ -228,7 +226,7 @@ async function showVersionDiff(
       } else if (part.removed) {
         logger.error(`-${line}`)
       } else {
-        console.log(chalk.gray(` ${line}`))
+        logger.info(chalk.gray(` ${line}`))
       }
     }
   }
@@ -270,19 +268,19 @@ async function listUserPublicPrompts(username: string): Promise<void> {
     return
   }
 
-  console.log(`\n@${username}'s Public Prompts [${prompts.length}]\n`)
+  logger.info(`\n@${username}'s Public Prompts [${prompts.length}]\n`)
 
   prompts.forEach((prompt, index) => {
-    console.log(chalk.bold(`${index + 1}. ${prompt.name}`))
+    logger.info(chalk.bold(`${index + 1}. ${prompt.name}`))
 
     if (prompt.description) {
-      console.log(chalk.gray(`   ${prompt.description}`))
+      logger.info(chalk.gray(`   ${prompt.description}`))
     } else {
-      console.log(chalk.gray(`   No description`))
+      logger.info(chalk.gray(`   No description`))
     }
 
-    console.log(chalk.gray(`   Version: v${prompt.current_version}`))
-    console.log(chalk.gray(`   Get: prompt-it get ${username}/${prompt.name}`))
+    logger.info(chalk.gray(`   Version: v${prompt.current_version}`))
+    logger.info(chalk.gray(`   Get: prompt-it get ${username}/${prompt.name}`))
     logger.blank()
   })
 }

@@ -1,5 +1,5 @@
 import logger from '../../utils/logger.js'
-import { confirm, isCancel, cancel } from '@clack/prompts'
+import { promptConfirm } from '../../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { getSession, clearSession } from '../../services/session.js'
@@ -17,13 +17,12 @@ export function registerLogoutCommand(program: Command): void {
           return
         }
 
-        const shouldLogout = await confirm({
+        const shouldLogout = await promptConfirm({
           message: `Logout from ${session.user.email || 'current account'}?`,
           initialValue: true
         })
 
-        if (isCancel(shouldLogout) || shouldLogout === false) {
-          cancel('Logout cancelled.')
+        if (!shouldLogout) {
           return
         }
 

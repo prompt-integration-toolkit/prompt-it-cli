@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js'
 import chalk from 'chalk'
-import { select, isCancel, cancel, spinner } from '@clack/prompts'
+import { promptSelect, spinner } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -133,8 +133,7 @@ async function paginatePromptResults(params: {
 
     const action = await askPageAction(currentPage, totalPages)
 
-    if (isCancel(action) || action === 'exit') {
-      cancel('Search closed.')
+    if (action === 'exit') {
       return
     }
 
@@ -176,8 +175,8 @@ function renderPromptResults(params: {
 }): void {
   logger.blank()
   logger.header(`Search results for "${params.query}"`)
-  console.log(chalk.gray(`Matched by: ${params.field}`))
-  console.log(
+  logger.info(chalk.gray(`Matched by: ${params.field}`))
+  logger.info(
     chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   logger.blank()
@@ -186,12 +185,12 @@ function renderPromptResults(params: {
     const globalIndex = (params.currentPage - 1) * RESULTS_PER_PAGE + index + 1
     const tags = prompt.tags?.length ? prompt.tags.join(', ') : 'none'
 
-    console.log(chalk.bold(`${globalIndex}. ${prompt.username}/${prompt.name}`))
-    console.log(`   ${prompt.title}`)
-    console.log(chalk.gray(`   ${prompt.description}`))
-    console.log(chalk.gray(`   Version: ${prompt.current_version}`))
-    console.log(chalk.gray(`   Tags: ${tags}`))
-    console.log(chalk.gray(`   Get: prompt-it get ${prompt.username}/${prompt.name}`))
+    logger.info(chalk.bold(`${globalIndex}. ${prompt.username}/${prompt.name}`))
+    logger.info(`   ${prompt.title}`)
+    logger.info(chalk.gray(`   ${prompt.description}`))
+    logger.info(chalk.gray(`   Version: ${prompt.current_version}`))
+    logger.info(chalk.gray(`   Tags: ${tags}`))
+    logger.info(chalk.gray(`   Get: prompt-it get ${prompt.username}/${prompt.name}`))
     logger.blank()
   })
 }
@@ -254,8 +253,7 @@ async function paginateUserResults(params: {
 
     const action = await askPageAction(currentPage, totalPages)
 
-    if (isCancel(action) || action === 'exit') {
-      cancel('Search closed.')
+    if (action === 'exit') {
       return
     }
 
@@ -295,7 +293,7 @@ async function renderUserResults(params: {
 }): Promise<void> {
   logger.blank()
   logger.header(`Users found for "${params.query}"`)
-  console.log(
+  logger.info(
     chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   logger.blank()
@@ -308,13 +306,13 @@ async function renderUserResults(params: {
   for (const [index, user] of params.results.entries()) {
     const globalIndex = (params.currentPage - 1) * RESULTS_PER_PAGE + index + 1
 
-    console.log(chalk.bold(`${globalIndex}. ${user.username}`))
+    logger.info(chalk.bold(`${globalIndex}. ${user.username}`))
 
     if (user.display_name) {
-      console.log(chalk.gray(`   Display name: ${user.display_name}`))
+      logger.info(chalk.gray(`   Display name: ${user.display_name}`))
     }
 
-    console.log(chalk.gray(`   Public prompts: ${promptCounts[index]}`))
+    logger.info(chalk.gray(`   Public prompts: ${promptCounts[index]}`))
     logger.blank()
   }
 }
@@ -349,7 +347,7 @@ async function askPageAction(
     label: 'Close search'
   })
 
-  return select<PageAction>({
+  return promptSelect<PageAction>({
     message: 'What do you want to do?',
     options
   })

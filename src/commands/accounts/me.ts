@@ -14,13 +14,13 @@ export function registerMeCommand(program: Command): void {
 
         if (!session) {
           logger.warn('You are not logged in.')
-          console.log(chalk.gray('Run: prompt-it login'))
+          logger.info(chalk.gray('Run: prompt-it login'))
           return
         }
 
         logger.blank()
         logger.header('Prompt-it account')
-        console.log(chalk.gray('-----------------'))
+        logger.info(chalk.gray('-----------------'))
         logger.property('User ID:', `${session.user.id}`)
         logger.property('Email:', `${session.user.email || 'unknown'}`)
         logger.blank()

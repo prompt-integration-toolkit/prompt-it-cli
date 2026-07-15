@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js'
 import chalk from 'chalk'
-import { text, isCancel, cancel, outro } from '@clack/prompts'
+import { promptText, outro } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -43,7 +43,7 @@ async function handleDelete(inputName: string): Promise<void> {
 
     if (!session) {
       logger.warn('You are not logged in.')
-      console.log(chalk.gray('Run: prompt-it login'))
+      logger.info(chalk.gray('Run: prompt-it login'))
       return
     }
 
@@ -125,10 +125,8 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
   if (deletingCurrent) {
     if (targetIndex === 0) {
       logger.blank()
-      console.log(
-        chalk.yellow(
-          `Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`
-        )
+      logger.warn(
+        `Warning: This deletion would remove all versions including the current version ${prompt.current_version}.`
       )
       logger.error('Please delete the entire prompt instead.')
       return
@@ -139,29 +137,24 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
 
   logger.blank()
   logger.header('Delete version')
-  console.log(chalk.gray('--------------'))
-  console.log(`${chalk.bold('Prompt:')}               ${profile.username}/${name}`)
-  console.log(`${chalk.bold('Target version:')}       ${version}`)
-  console.log(`${chalk.bold('Dependent versions:')}`)
+  logger.info(chalk.gray('--------------'))
+  logger.info(`${chalk.bold('Prompt:')}               ${profile.username}/${name}`)
+  logger.info(`${chalk.bold('Target version:')}       ${version}`)
+  logger.info(`${chalk.bold('Dependent versions:')}`)
   versionsToDelete.forEach((v) => {
     const isTarget = v.version === version
-    console.log(`  - ${v.version} (${v.change_type})${isTarget ? chalk.gray(' [target]') : ''}`)
+    logger.info(`  - ${v.version} (${v.change_type})${isTarget ? chalk.gray(' [target]') : ''}`)
   })
 
   if (newCurrentVersion) {
-    console.log(`${chalk.bold('New current version:')}  ${chalk.green(newCurrentVersion)}`)
+    logger.info(`${chalk.bold('New current version:')}  ${chalk.green(newCurrentVersion)}`)
   }
   logger.blank()
 
-  const confirmation = await text({
+  const confirmation = await promptText({
     message: `Continue? Type "${version}" to confirm:`,
     placeholder: version
   })
-
-  if (isCancel(confirmation)) {
-    cancel('Delete cancelled.')
-    return
-  }
 
   if (confirmation !== version) {
     logger.error('Confirmation did not match. Aborting.')
@@ -184,19 +177,15 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
   }
 
   if (!deletedRows || deletedRows.length === 0) {
-    console.log(
-      chalk.red(
-        `Error: No versions were deleted. This usually means Supabase Row Level Security (RLS) is blocking the DELETE operation on 'prompt_versions'. Please check your Supabase policies.`
-      )
+    logger.validation(
+      `Error: No versions were deleted. This usually means Supabase Row Level Security (RLS) is blocking the DELETE operation on 'prompt_versions'. Please check your Supabase policies.`
     )
     return
   }
 
   if (deletedRows.length !== idsToDelete.length) {
-    console.log(
-      chalk.yellow(
-        `Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`
-      )
+    logger.warn(
+      `Warning: Only ${deletedRows.length} out of ${idsToDelete.length} versions were deleted.`
     )
   }
 
@@ -210,10 +199,8 @@ async function handleDeleteVersion(profile: UserProfile, name: string, version: 
       .eq('id', prompt.id)
 
     if (updateError) {
-      console.log(
-        chalk.red(
-          `Warning: Versions deleted, but could not update current_version: ${updateError.message}`
-        )
+      logger.validation(
+        `Warning: Versions deleted, but could not update current_version: ${updateError.message}`
       )
     }
   }
@@ -251,25 +238,20 @@ async function handleDeletePrompt(profile: UserProfile, name: string): Promise<v
 
   logger.blank()
   logger.header('Delete prompt')
-  console.log(chalk.gray('-------------'))
-  console.log(`${chalk.bold('Prompt:')}          ${profile.username}/${name}`)
-  console.log(`${chalk.bold('Current version:')} ${prompt.current_version}`)
-  console.log(`${chalk.bold('Versions:')}        ${versionCount}`)
+  logger.info(chalk.gray('-------------'))
+  logger.info(`${chalk.bold('Prompt:')}          ${profile.username}/${name}`)
+  logger.info(`${chalk.bold('Current version:')} ${prompt.current_version}`)
+  logger.info(`${chalk.bold('Versions:')}        ${versionCount}`)
   logger.blank()
-  console.log(chalk.gray('This prompt will no longer appear in search or get.'))
-  console.log(chalk.gray(`It will be permanently deleted after 1 day (${expiresAtFormatted}).`))
-  console.log(chalk.gray('This action will not reset your post limit usage.'))
+  logger.info(chalk.gray('This prompt will no longer appear in search or get.'))
+  logger.info(chalk.gray(`It will be permanently deleted after 1 day (${expiresAtFormatted}).`))
+  logger.info(chalk.gray('This action will not reset your post limit usage.'))
   logger.blank()
 
-  const confirmation = await text({
+  const confirmation = await promptText({
     message: `Continue? Type "${name}" to confirm:`,
     placeholder: name
   })
-
-  if (isCancel(confirmation)) {
-    cancel('Delete cancelled.')
-    return
-  }
 
   if (confirmation !== name) {
     logger.error('Confirmation did not match. Aborting.')

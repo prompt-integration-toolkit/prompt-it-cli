@@ -4,7 +4,7 @@ import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import { createTwoFilesPatch } from 'diff'
-import { confirm, isCancel, cancel } from '@clack/prompts'
+import { promptConfirm } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -72,7 +72,7 @@ async function handleInitialPublish(
 
     if (!session) {
       logger.warn('You are not logged in.')
-      console.log(chalk.gray('Run: prompt-it login'))
+      logger.info(chalk.gray('Run: prompt-it login'))
       return
     }
 
@@ -86,7 +86,7 @@ async function handleInitialPublish(
 
     if (!details && !promptFileArg) {
       logger.error('prompt-details.json not found.')
-      console.log(chalk.gray('Run: prompt-it init'))
+      logger.info(chalk.gray('Run: prompt-it init'))
       return
     }
 
@@ -105,7 +105,7 @@ async function handleInitialPublish(
 
     if (!name || !title || !description) {
       logger.error('Missing prompt details.')
-      console.log(
+      logger.info(
         chalk.gray(
           'Required fields: name, title, description. Use prompt-details.json or command flags.'
         )
@@ -114,9 +114,7 @@ async function handleInitialPublish(
     }
 
     if (!isValidPromptName(name)) {
-      console.log(
-        chalk.red('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
-      )
+      logger.validation('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
       return
     }
 
@@ -131,7 +129,7 @@ async function handleInitialPublish(
 
     if (existingPrompt) {
       logger.error(`Prompt already exists: ${profile.username}/${name}`)
-      console.log(chalk.gray('Use: prompt-it publish update'))
+      logger.info(chalk.gray('Use: prompt-it publish update'))
       return
     }
 
@@ -139,22 +137,21 @@ async function handleInitialPublish(
 
     logger.blank()
     logger.header('Publish summary')
-    console.log(chalk.gray('---------------'))
-    console.log(`${chalk.bold('Author:')} ${profile.username}`)
-    console.log(`${chalk.bold('Name:')} ${name}`)
-    console.log(`${chalk.bold('Title:')} ${title}`)
-    console.log(`${chalk.bold('Description:')} ${description}`)
-    console.log(`${chalk.bold('Version:')} ${version}`)
-    console.log(`${chalk.bold('Tags:')} ${tags.join(', ') || 'none'}`)
+    logger.info(chalk.gray('---------------'))
+    logger.property('Author:', profile.username)
+    logger.property('Name:', name)
+    logger.property('Title:', title)
+    logger.property('Description:', description)
+    logger.property('Version:', version)
+    logger.property('Tags:', tags.join(', ') || 'none')
     logger.blank()
 
-    const shouldPublish = await confirm({
+    const shouldPublish = await promptConfirm({
       message: 'Publish prompt?',
       initialValue: true
     })
 
-    if (isCancel(shouldPublish) || shouldPublish === false) {
-      cancel('Publish cancelled.')
+    if (!shouldPublish) {
       return
     }
 
@@ -211,7 +208,7 @@ async function handlePublishUpdate(
 
     if (!session) {
       logger.warn('You are not logged in.')
-      console.log(chalk.gray('Run: prompt-it login'))
+      logger.info(chalk.gray('Run: prompt-it login'))
       return
     }
 
@@ -225,7 +222,7 @@ async function handlePublishUpdate(
 
     if (!details && !promptFileArg) {
       logger.error('prompt-details.json not found.')
-      console.log(chalk.gray('Run: prompt-it init'))
+      logger.info(chalk.gray('Run: prompt-it init'))
       return
     }
 
@@ -244,7 +241,7 @@ async function handlePublishUpdate(
 
     if (!name || !title || !description || !newVersion) {
       logger.error('Missing prompt details.')
-      console.log(
+      logger.info(
         chalk.gray(
           'Required fields: name, title, description, version. Use prompt-details.json or command flags.'
         )
@@ -253,9 +250,7 @@ async function handlePublishUpdate(
     }
 
     if (!isValidPromptName(name)) {
-      console.log(
-        chalk.red('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
-      )
+      logger.validation('Invalid prompt name. Use only letters, numbers, hyphen or underscore.')
       return
     }
 
@@ -268,7 +263,7 @@ async function handlePublishUpdate(
 
     if (!existingPrompt) {
       logger.error(`Prompt not found: ${profile.username}/${name}`)
-      console.log(chalk.gray('Use prompt-it publish first.'))
+      logger.info(chalk.gray('Use prompt-it publish first.'))
       return
     }
 
@@ -278,10 +273,8 @@ async function handlePublishUpdate(
     }
 
     if (!isVersionGreater(newVersion, existingPrompt.current_version)) {
-      console.log(
-        chalk.red(
-          `New version must be greater than current version ${existingPrompt.current_version}.`
-        )
+      logger.validation(
+        `New version must be greater than current version ${existingPrompt.current_version}.`
       )
       return
     }
@@ -313,24 +306,23 @@ async function handlePublishUpdate(
 
     logger.blank()
     logger.header('Update summary')
-    console.log(chalk.gray('--------------'))
-    console.log(`${chalk.bold('Prompt:')} ${profile.username}/${name}`)
-    console.log(`${chalk.bold('Current version:')} ${existingPrompt.current_version}`)
-    console.log(`${chalk.bold('New version:')} ${newVersion}`)
-    console.log(`${chalk.bold('Change type:')} ${changeType}`)
-    console.log(`${chalk.bold('Title:')} ${title}`)
-    console.log(`${chalk.bold('Description:')} ${description}`)
-    console.log(`${chalk.bold('Tags:')} ${tags.join(', ') || 'none'}`)
-    console.log(`${chalk.bold('Message:')} ${updateMessage}`)
+    logger.info(chalk.gray('--------------'))
+    logger.property('Prompt:', `${profile.username}/${name}`)
+    logger.property('Current version:', existingPrompt.current_version)
+    logger.property('New version:', newVersion)
+    logger.property('Change type:', changeType)
+    logger.property('Title:', title)
+    logger.property('Description:', description)
+    logger.property('Tags:', tags.join(', ') || 'none')
+    logger.property('Message:', updateMessage)
     logger.blank()
 
-    const shouldUpdate = await confirm({
+    const shouldUpdate = await promptConfirm({
       message: 'Update prompt?',
       initialValue: true
     })
 
-    if (isCancel(shouldUpdate) || shouldUpdate === false) {
-      cancel('Update cancelled.')
+    if (!shouldUpdate) {
       return
     }
 

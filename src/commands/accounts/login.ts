@@ -1,5 +1,5 @@
 import logger from '../../utils/logger.js'
-import { text, password, isCancel, cancel } from '@clack/prompts'
+import { promptText, promptPassword } from '../../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'
@@ -12,7 +12,7 @@ export function registerLoginCommand(program: Command): void {
     .description('Login into your Prompt-it account.')
     .action(async () => {
       try {
-        const email = await text({
+        const email = await promptText({
           message: 'Email:',
           validate(value) {
             if (!value) return 'Email is required.'
@@ -20,22 +20,12 @@ export function registerLoginCommand(program: Command): void {
           }
         })
 
-        if (isCancel(email)) {
-          cancel('Login cancelled.')
-          return
-        }
-
-        const userPassword = await password({
+        const userPassword = await promptPassword({
           message: 'Password:',
           validate(value) {
             if (!value) return 'Password is required.'
           }
         })
-
-        if (isCancel(userPassword)) {
-          cancel('Login cancelled.')
-          return
-        }
 
         const { data, error } = await supabase.auth.signInWithPassword({
           email: String(email),

@@ -1,4 +1,4 @@
-import { text, confirm, select, isCancel, cancel } from '@clack/prompts'
+import { text, confirm, select, isCancel, cancel, password, spinner, outro } from '@clack/prompts'
 
 function handleCancel(result: unknown): asserts result is Exclude<typeof result, symbol> {
   if (isCancel(result)) {
@@ -9,6 +9,12 @@ function handleCancel(result: unknown): asserts result is Exclude<typeof result,
 
 export async function promptText(options: Parameters<typeof text>[0]) {
   const result = await text(options)
+  handleCancel(result)
+  return result
+}
+
+export async function promptPassword(options: Parameters<typeof password>[0]) {
+  const result = await password(options)
   handleCancel(result)
   return result
 }
@@ -25,3 +31,5 @@ export async function promptSelect<T>(options: any) {
   handleCancel(result)
   return result as T
 }
+
+export { spinner, outro }

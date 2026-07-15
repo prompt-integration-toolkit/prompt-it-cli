@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js'
 import chalk from 'chalk'
-import { text, isCancel, cancel } from '@clack/prompts'
+import { promptText } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -30,7 +30,7 @@ async function handleRevoke(inputName: string): Promise<void> {
 
     if (!session) {
       logger.warn('You are not logged in.')
-      console.log(chalk.gray('Run: prompt-it login'))
+      logger.info(chalk.gray('Run: prompt-it login'))
       return
     }
 
@@ -87,20 +87,15 @@ async function handleRevokePrompt(profile: UserProfile, name: string): Promise<v
 
   logger.blank()
   logger.header('Revoke prompt')
-  console.log(chalk.gray('-------------'))
+  logger.info(chalk.gray('-------------'))
   logger.property('Prompt:', `         ${profile.username}/${name}`)
   logger.property('Current version:', `${prompt.current_version}`)
   logger.blank()
 
-  const confirmation = await text({
+  const confirmation = await promptText({
     message: `Continue? Type "${name}" to confirm you want to revoke deletion:`,
     placeholder: name
   })
-
-  if (isCancel(confirmation)) {
-    cancel('Revoke cancelled.')
-    return
-  }
 
   if (confirmation !== name) {
     logger.error('Confirmation did not match. Aborting.')
@@ -183,12 +178,10 @@ async function handleRevokeVersion(
   for (let i = 0; i < targetIndex; i++) {
     const v = sortedVersions[i]
     if (v.deleted_at && v.deleted_at !== targetDeletedAt) {
-      console.log(
-        chalk.red(
-          `Error: Cannot revoke version ${version} because its dependent versions ` +
-            `are deleted or unavailable.\n` +
-            `Please revoke the root version (if possible) first.`
-        )
+      logger.validation(
+        `Error: Cannot revoke version ${version} because its dependent versions ` +
+          `are deleted or unavailable.\n` +
+          `Please revoke the root version (if possible) first.`
       )
       return
     }
@@ -198,23 +191,18 @@ async function handleRevokeVersion(
 
   logger.blank()
   logger.header('Revoke version')
-  console.log(chalk.gray('--------------'))
+  logger.info(chalk.gray('--------------'))
   logger.property('Prompt:', `         ${profile.username}/${name}`)
   logger.property('Target version:', ` ${version}`)
-  console.log(
+  logger.info(
     `${chalk.bold('Restoring:')}       ${versionsToRestore.map((v) => v.version).join(', ')}`
   )
   logger.blank()
 
-  const confirmation = await text({
+  const confirmation = await promptText({
     message: `Continue? Type "${version}" to confirm:`,
     placeholder: version
   })
-
-  if (isCancel(confirmation)) {
-    cancel('Revoke cancelled.')
-    return
-  }
 
   if (confirmation !== version) {
     logger.error('Confirmation did not match. Aborting.')
@@ -250,10 +238,8 @@ async function handleRevokeVersion(
     .eq('id', prompt.id)
 
   if (promptUpdateError) {
-    console.log(
-      chalk.red(
-        `Warning: Versions restored, but could not update current_version: ${promptUpdateError.message}`
-      )
+    logger.validation(
+      `Warning: Versions restored, but could not update current_version: ${promptUpdateError.message}`
     )
   }
 

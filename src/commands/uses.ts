@@ -22,7 +22,7 @@ async function handleUses(): Promise<void> {
 
     if (!session) {
       logger.warn('You are not logged in.')
-      console.log(chalk.gray('Run: prompt-it login'))
+      logger.info(chalk.gray('Run: prompt-it login'))
       return
     }
 
@@ -37,17 +37,15 @@ async function handleUses(): Promise<void> {
 
     logger.blank()
     logger.header('Post usage')
-    console.log(chalk.gray('----------'))
+    logger.info(chalk.gray('----------'))
     logger.property('Used:', `     ${count}/${POST_LIMIT}`)
     logger.property('Remaining:', `${remaining}`)
     logger.blank()
 
     if (count >= POST_LIMIT) {
-      console.log(
-        chalk.red(
-          `Post limit reached. You have used ${count}/${POST_LIMIT} posts.\n` +
-            `  Each prompt publish and each version update counts as 1 post.`
-        )
+      logger.validation(
+        `Post limit reached. You have used ${count}/${POST_LIMIT} posts.\n` +
+          `  Each prompt publish and each version update counts as 1 post.`
       )
     } else if (remaining <= 10) {
       logger.warn(`Warning: only ${remaining} post(s) remaining.`)

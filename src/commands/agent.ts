@@ -1,6 +1,6 @@
 import logger from '../utils/logger.js'
 import chalk from 'chalk'
-import { confirm, isCancel } from '@clack/prompts'
+import { promptConfirm } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -106,10 +106,8 @@ export function registerAgentCommand(program: Command): void {
         const alreadyInstalled = await adapter.isInstalled(resolved.name)
 
         if (alreadyInstalled && !options.force) {
-          console.log(
-            chalk.yellow(
-              `Prompt "${resolved.name}" is already installed on ${adapter.displayName}. Use --force to overwrite.`
-            )
+          logger.warn(
+            `Prompt "${resolved.name}" is already installed on ${adapter.displayName}. Use --force to overwrite.`
           )
           return
         }
@@ -121,15 +119,11 @@ export function registerAgentCommand(program: Command): void {
           version: resolved.resolved_version
         })
 
-        console.log(
-          chalk.green(`✔ Prompt "${resolved.name}" successfully installed on ${adapter.displayName}.`)
-        )
+        logger.success(`✔ Prompt "${resolved.name}" successfully installed on ${adapter.displayName}.`, false)
       } catch (error) {
         if (isPermissionError(error)) {
-          console.log(
-            chalk.red(
-              '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
-            )
+          logger.validation(
+            '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
           )
           return
         }
@@ -167,12 +161,12 @@ export function registerAgentCommand(program: Command): void {
             ? names[0]
             : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
             
-          const shouldRemoveAll = await confirm({
+          const shouldRemoveAll = await promptConfirm({
             message: `Are you sure you want to remove ALL managed prompts from ${label}?`,
             initialValue: false
           })
 
-          if (isCancel(shouldRemoveAll) || !shouldRemoveAll) {
+          if (!shouldRemoveAll) {
             logger.warn('Operation cancelled.')
             return
           }
@@ -221,10 +215,8 @@ export function registerAgentCommand(program: Command): void {
 
       } catch (error) {
         if (isPermissionError(error)) {
-          console.log(
-            chalk.red(
-              '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
-            )
+          logger.validation(
+            '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
           )
           return
         }
@@ -252,10 +244,8 @@ export function registerAgentCommand(program: Command): void {
         }
       } catch (error) {
         if (isPermissionError(error)) {
-          console.log(
-            chalk.red(
-              '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
-            )
+          logger.validation(
+            '✖ Permission denied. Please run the command again using \'sudo\' if necessary.'
           )
           return
         }
@@ -336,14 +326,14 @@ async function listAllInstalledPrompts(
   }
 
   logger.blank()
-  console.log(chalk.white(formatAgentHeader(options)))
+  logger.info(chalk.white(formatAgentHeader(options)))
   logger.blank()
 
   for (const result of results) {
     if (result.prompts.length > 0) {
       logger.header(result.displayName)
       for (const prompt of result.prompts) {
-        console.log(`  • ${prompt}`)
+        logger.info(`  • ${prompt}`)
       }
       logger.blank()
     } else {
@@ -377,9 +367,9 @@ async function searchPromptAcrossAgents(
   }
 
   logger.blank()
-  console.log(chalk.white(`Prompt "${promptName}" is installed on:`))
+  logger.info(chalk.white(`Prompt "${promptName}" is installed on:`))
   for (const name of foundOn) {
-    console.log(`  • ${name}`)
+    logger.info(`  • ${name}`)
   }
   logger.blank()
 }

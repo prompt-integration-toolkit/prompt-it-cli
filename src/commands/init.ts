@@ -2,7 +2,7 @@ import logger from '../utils/logger.js'
 import path from 'node:path'
 import process from 'node:process'
 import fs from 'fs-extra'
-import { confirm, isCancel, cancel } from '@clack/prompts'
+import { promptConfirm } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 type PromptDetailsTemplate = {
@@ -35,13 +35,12 @@ export function registerInitCommand(program: Command): void {
         const exists = await fs.pathExists(filePath)
 
         if (exists) {
-          const shouldOverwrite = await confirm({
+          const shouldOverwrite = await promptConfirm({
             message: `${PROMPT_DETAILS_FILE} already exists. Overwrite?`,
             initialValue: false
           })
 
-          if (isCancel(shouldOverwrite) || shouldOverwrite === false) {
-            cancel('Init cancelled.')
+          if (!shouldOverwrite) {
             return
           }
         }

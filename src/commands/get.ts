@@ -4,7 +4,7 @@ import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import clipboard from 'clipboardy'
-import { select, confirm, isCancel, cancel } from '@clack/prompts'
+import { promptSelect, promptConfirm } from '../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
@@ -34,7 +34,7 @@ export function registerGetCommand(program: Command): void {
 
         if (action && action !== 'details') {
           logger.error(`Unknown get action: ${action}`)
-          console.log(chalk.gray('Available action: details'))
+          logger.info(chalk.gray('Available action: details'))
           return
         }
 
@@ -113,18 +113,18 @@ async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
 async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean): Promise<void> {
   logger.blank()
   logger.header(`# ${prompt.title || prompt.name}`)
-  console.log(chalk.gray(`Author: ${prompt.username}`))
-  console.log(chalk.gray(`Version: ${prompt.resolved_version}`))
+  logger.info(chalk.gray(`Author: ${prompt.username}`))
+  logger.info(chalk.gray(`Version: ${prompt.resolved_version}`))
 
   if (prompt.is_historical_version) {
-    console.log(chalk.gray(`Latest version: ${prompt.current_version}`))
+    logger.info(chalk.gray(`Latest version: ${prompt.current_version}`))
   }
 
   logger.blank()
-  console.log(prompt.resolved_content)
+  logger.info(prompt.resolved_content)
   logger.blank()
 
-  const action = await select<PromptAction>({
+  const action = await promptSelect<PromptAction>({
     message: 'What do you want to do with this prompt?',
     options: [
       {
@@ -141,11 +141,6 @@ async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean):
       }
     ]
   })
-
-  if (isCancel(action)) {
-    cancel('Operation cancelled.')
-    return
-  }
 
   if (action === 'copy') {
     await copyPromptToClipboard(prompt)
@@ -165,12 +160,12 @@ async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean):
 }
 
 async function askToCreatePromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
-  const shouldCreateDetails = await confirm({
+  const shouldCreateDetails = await promptConfirm({
     message: 'Get prompt-details.json?',
     initialValue: false
   })
 
-  if (isCancel(shouldCreateDetails) || shouldCreateDetails === false) {
+  if (!shouldCreateDetails) {
     return
   }
 
@@ -193,13 +188,12 @@ async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
   const exists = await fs.pathExists(filePath)
 
   if (exists) {
-    const shouldOverwrite = await confirm({
+    const shouldOverwrite = await promptConfirm({
       message: `${fileName} already exists. Overwrite?`,
       initialValue: false
     })
 
-    if (isCancel(shouldOverwrite) || shouldOverwrite === false) {
-      cancel('File creation cancelled.')
+    if (!shouldOverwrite) {
       return
     }
   }
@@ -216,13 +210,12 @@ async function createPromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
   const exists = await fs.pathExists(filePath)
 
   if (exists) {
-    const shouldOverwrite = await confirm({
+    const shouldOverwrite = await promptConfirm({
       message: `${fileName} already exists. Overwrite?`,
       initialValue: false
     })
 
-    if (isCancel(shouldOverwrite) || shouldOverwrite === false) {
-      cancel('prompt-details.json creation cancelled.')
+    if (!shouldOverwrite) {
       return
     }
   }

@@ -1,6 +1,6 @@
 import logger from '../../utils/logger.js'
 import chalk from 'chalk'
-import { text, password, confirm, isCancel, cancel, outro } from '@clack/prompts'
+import { promptText, promptPassword, promptConfirm, outro } from '../../utils/prompts.js'
 import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'
@@ -13,7 +13,7 @@ export function registerRegisterCommand(program: Command): void {
     .description('Create a new Prompt-it account.')
     .action(async () => {
       try {
-        const email = await text({
+        const email = await promptText({
           message: 'Email:',
           validate(value) {
             if (!value) return 'Email is required.'
@@ -21,12 +21,7 @@ export function registerRegisterCommand(program: Command): void {
           }
         })
 
-        if (isCancel(email)) {
-          cancel('Registration cancelled.')
-          return
-        }
-
-        const userPassword = await password({
+        const userPassword = await promptPassword({
           message: 'Password:',
           validate(value) {
             if (!value) return 'Password is required.'
@@ -36,12 +31,7 @@ export function registerRegisterCommand(program: Command): void {
           }
         })
 
-        if (isCancel(userPassword)) {
-          cancel('Registration cancelled.')
-          return
-        }
-
-        const confirmPassword = await password({
+        await promptPassword({
           message: 'Confirm password:',
           validate(value) {
             if (!value) return 'Password confirmation is required.'
@@ -51,12 +41,7 @@ export function registerRegisterCommand(program: Command): void {
           }
         })
 
-        if (isCancel(confirmPassword)) {
-          cancel('Registration cancelled.')
-          return
-        }
-
-        const username = await text({
+        const username = await promptText({
           message: 'Username:',
           validate(value) {
             if (!value) return 'Username is required.'
@@ -66,11 +51,6 @@ export function registerRegisterCommand(program: Command): void {
           }
         })
 
-        if (isCancel(username)) {
-          cancel('Registration cancelled.')
-          return
-        }
-
         const usernameTaken = await usernameAlreadyExists(String(username))
 
         if (usernameTaken) {
@@ -78,13 +58,12 @@ export function registerRegisterCommand(program: Command): void {
           return
         }
 
-        const shouldCreate = await confirm({
-          message: `Create account for ${email} with username ${username}?`,
+        const shouldCreate = await promptConfirm({
+          message: `Create account for ${String(email)} with username ${String(username)}?`,
           initialValue: true
         })
 
-        if (isCancel(shouldCreate) || shouldCreate === false) {
-          cancel('Registration cancelled.')
+        if (!shouldCreate) {
           return
         }
 
@@ -101,10 +80,8 @@ export function registerRegisterCommand(program: Command): void {
         const userId = signUpData.user?.id
 
         if (!userId) {
-          console.log(
-            chalk.yellow(
-              'Account created, but user ID was not returned. Check if email confirmation is enabled.'
-            )
+          logger.warn(
+            'Account created, but user ID was not returned. Check if email confirmation is enabled.'
           )
           return
         }
@@ -130,7 +107,7 @@ export function registerRegisterCommand(program: Command): void {
             }
           })
 
-          logger.success(`Account created and logged in as ${username}.`, true)
+          logger.success(`Account created and logged in as ${String(username)}.`, true)
           return
         }
 
